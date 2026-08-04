@@ -44,6 +44,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     
     .sync-text { font-size: 0.6rem; color: var(--text-secondary); white-space: nowrap; }
+    .cache-indicator { font-size: 0.55rem; color: var(--success); margin-left: 4px; }
     
     .refresh-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: var(--text); padding: 6px 10px; border-radius: 12px; cursor: pointer; font-size: 0.72rem; margin-left: auto; }
     .refresh-btn:hover { background: rgba(255,255,255,0.12); }
@@ -59,10 +60,13 @@
     
     .book-card {
       background: var(--surface); border-radius: 10px; padding: 16px 12px;
-      cursor: pointer; transition: all 0.25s; text-align: center; border: 1px solid transparent;
+      cursor: pointer; transition: all 0.25s; text-align: center; border: 1px solid transparent; position: relative;
     }
     .book-card:hover { border-color: rgba(201,168,124,0.4); transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
     .book-card:active { transform: scale(0.97); }
+    .book-card.cached::after {
+      content: '💾'; position: absolute; top: 6px; left: 6px; font-size: 0.5rem;
+    }
     .book-card .emoji { font-size: 2rem; margin-bottom: 8px; }
     .book-card .title { color: var(--text); font-size: 0.75rem; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .book-card .link { color: var(--text-secondary); font-size: 0.5rem; margin-top: 4px; word-break: break-all; font-family: monospace; }
@@ -97,8 +101,6 @@
     .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.08); border-top: 3px solid var(--accent); border-radius: 50%; animation: spinAnim 0.7s linear infinite; }
     @keyframes spinAnim { to { transform: rotate(360deg); } }
     .load-text { color: var(--text-secondary); margin-top: 10px; font-size: 0.72rem; }
-    .load-bar { width: 200px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 10px; overflow: hidden; }
-    .load-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.3s; }
     .retry-btn { background: var(--accent); color: #1a1a1a; border: none; padding: 7px 18px; border-radius: 18px; cursor: pointer; font-weight: 600; font-size: 0.72rem; margin-top: 12px; font-family: inherit; }
     .retry-btn.hidden { display: none; }
     
@@ -172,7 +174,6 @@
           <div class="load-overlay" id="readerLoading">
             <div class="spinner"></div>
             <div class="load-text" id="readerLoadText">Membuka PDF...</div>
-            <div class="load-bar"><div class="load-bar-fill" id="loadBarFill"></div></div>
             <button class="retry-btn hidden" id="retryBtn">🔄 Coba Lagi</button>
           </div>
         </div>
@@ -189,17 +190,19 @@
   <script>
     (function() {
       // ============ CONFIG ============
-      // GANTI dengan URL Web App deployment Anda!
-      var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycby2PnjW0nRRy2P4AE-MeHIAS8BYPvSmALao_o_xm4R0rNxUS_zdifCOuRIstB3jwbjw/exec';
-      
-      // Spreadsheet ID (sama dengan di Code.gs)
+      var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwG0iQUK0-2evTzBfjM3pmEVBHDrlzroyJzdk-9ZfrSaA8l7POsziMHSXjSitUWeZrN/exec';
       var SPREADSHEET_ID = '1HWxBGy3Q40euhy61csEocfbXXNc6bzM1cLjzz8u6Eyg';
       var SHEET_NAME = 'E-Book Library';
+      
+      // Cache configuration
+      var PDF_CACHE_MAX = 5; // Maksimal 5 PDF di cache
+      var PDF_CACHE_TTL = 30 * 60 * 1000; // 30 menit
       
       var state = {
         books: [], currentBook: null, pdfDoc: null,
         totalPages: 10, totalSpreads: 5, currentSpread: 0, isFlipping: false,
-        syncTimer: null
+        syncTimer: null,
+        pdfCache: {} // Cache untuk PDF: { fileId: { base64, timestamp, pages } }
       };
 
       function $(id) { return document.getElementById(id); }
@@ -210,13 +213,13 @@
         DOM.libLoading = $('libLoading'); DOM.bookScroll = $('bookScroll');
         DOM.refreshBtn = $('refreshBtn'); DOM.readerView = $('readerView');
         DOM.readerLoading = $('readerLoading'); DOM.readerLoadText = $('readerLoadText');
-        DOM.loadBarFill = $('loadBarFill'); DOM.retryBtn = $('retryBtn');
-        DOM.pageFlip = $('pageFlip'); DOM.pageFront = $('pageFront');
-        DOM.pdfCanvasLeft = $('pdfCanvasLeft'); DOM.pdfCanvasRight = $('pdfCanvasRight');
-        DOM.pdfCanvasBack = $('pdfCanvasBack'); DOM.pageLabelLeft = $('pageLabelLeft');
-        DOM.pageLabelRight = $('pageLabelRight'); DOM.pageIndicator = $('pageIndicator');
-        DOM.readerBookTitle = $('readerBookTitle'); DOM.btnPrev = $('btnPrev');
-        DOM.btnNext = $('btnNext'); DOM.btnBack = $('btnBack'); DOM.toast = $('toast');
+        DOM.retryBtn = $('retryBtn'); DOM.pageFlip = $('pageFlip');
+        DOM.pageFront = $('pageFront'); DOM.pdfCanvasLeft = $('pdfCanvasLeft');
+        DOM.pdfCanvasRight = $('pdfCanvasRight'); DOM.pdfCanvasBack = $('pdfCanvasBack');
+        DOM.pageLabelLeft = $('pageLabelLeft'); DOM.pageLabelRight = $('pageLabelRight');
+        DOM.pageIndicator = $('pageIndicator'); DOM.readerBookTitle = $('readerBookTitle');
+        DOM.btnPrev = $('btnPrev'); DOM.btnNext = $('btnNext');
+        DOM.btnBack = $('btnBack'); DOM.toast = $('toast');
       }
 
       function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
@@ -235,11 +238,10 @@
 
       function showLibLoading(s) { if (DOM.libLoading) DOM.libLoading.classList.toggle('hidden', !s); }
       
-      function showReaderLoading(s, txt, prog) {
+      function showReaderLoading(s, txt) {
         if (!DOM.readerLoading) return;
         DOM.readerLoading.classList.toggle('hidden', !s);
         if (txt && DOM.readerLoadText) DOM.readerLoadText.textContent = txt;
-        if (DOM.loadBarFill) DOM.loadBarFill.style.width = (prog || 0) + '%';
         if (s && DOM.retryBtn) DOM.retryBtn.classList.add('hidden');
       }
 
@@ -254,14 +256,9 @@
 
       function clearCanvas(c) { if (c) { c.width = 1; c.height = 1; c.getContext('2d').clearRect(0, 0, 1, 1); } }
 
-      // ============ EXTRACT FILE ID DARI LINK B2:B ============
       function extractFileId(url) {
         if (!url) return '';
-        var patterns = [
-          /\/d\/([a-zA-Z0-9_-]+)/,
-          /[?&]id=([a-zA-Z0-9_-]+)/,
-          /\/file\/d\/([a-zA-Z0-9_-]+)/
-        ];
+        var patterns = [/\/d\/([a-zA-Z0-9_-]+)/, /[?&]id=([a-zA-Z0-9_-]+)/, /\/file\/d\/([a-zA-Z0-9_-]+)/];
         for (var i = 0; i < patterns.length; i++) {
           var match = String(url).match(patterns[i]);
           if (match && match[1]) return match[1];
@@ -269,127 +266,110 @@
         return String(url);
       }
 
-      // ============ FETCH BOOKS DARI B2:B ============
+      // ============ PDF CACHE MANAGEMENT ============
+      function getCachedPDF(fileId) {
+        var cached = state.pdfCache[fileId];
+        if (cached && (Date.now() - cached.timestamp) < PDF_CACHE_TTL) {
+          console.log('💾 Cache hit for:', fileId);
+          return cached;
+        }
+        return null;
+      }
+
+      function setCachedPDF(fileId, base64, pdfDoc) {
+        // Hapus cache terlama jika melebihi batas
+        var keys = Object.keys(state.pdfCache);
+        if (keys.length >= PDF_CACHE_MAX) {
+          var oldest = keys.reduce(function(a, b) {
+            return state.pdfCache[a].timestamp < state.pdfCache[b].timestamp ? a : b;
+          });
+          delete state.pdfCache[oldest];
+          console.log('🗑️ Cache evicted:', oldest);
+        }
+        
+        state.pdfCache[fileId] = {
+          base64: base64,
+          pdfDoc: pdfDoc,
+          timestamp: Date.now()
+        };
+        console.log('💾 Cached PDF:', fileId, 'Total cached:', Object.keys(state.pdfCache).length);
+      }
+
+      // ============ FETCH BOOKS ============
       async function fetchBooks(silent) {
         if (!silent) { showLibLoading(true); setSyncStatus('syncing', 'Syncing...'); }
         
         try {
-          // Panggil Web App untuk dapatkan data dari B2:B
           var res = await fetch(WEBAPP_URL + '?_=' + Date.now());
           var data = await res.json();
           
           if (data.success && data.books && data.books.length > 0) {
-            var oldCount = state.books.length;
-            state.books = data.books;
-            // Pastikan setiap buku punya fileId dari kolom B
-            state.books = state.books.map(function(b) {
+            state.books = data.books.map(function(b) {
               return {
-                title: b.title || 'PDF from B2:B',
+                title: b.title || 'PDF Document',
                 url: b.url || '',
                 fileId: b.fileId || extractFileId(b.url),
                 academicYear: b.academicYear || '2024/2025',
-                category: b.category || 'PDF'
+                category: b.category || 'PDF',
+                author: b.author || '',
+                rowNumber: b.rowNumber || 0
               };
             });
             renderBooks();
             setSyncStatus('', 'Live');
-            if (!silent) console.log('✅ Synced', state.books.length, 'books from B2:B');
-            if (oldCount !== state.books.length && oldCount > 0) {
-              toast('🔄 B2:B updated! ' + state.books.length + ' books', 'success', 2000);
-            }
           } else {
-            console.warn('No books from B2:B, using empty state');
             state.books = [];
             renderBooks();
             setSyncStatus('', 'Live');
           }
         } catch (e) {
-          console.error('Sync error:', e.message);
-          if (!silent) {
-            // Jangan gunakan fallback, tunjukkan pesan untuk cek koneksi
-            if (!state.books.length) {
-              DOM.bookScroll.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><div style="font-size:3rem;">🔗</div><div>Menghubungkan ke B2:B...</div><div style="font-size:0.7rem;margin-top:8px;">Spreadsheet: ' + SPREADSHEET_ID + '</div><div style="font-size:0.7rem;">Sheet: ' + SHEET_NAME + '</div><div style="font-size:0.6rem;margin-top:8px;color:var(--danger);">' + e.message + '</div></div>';
-            }
-            setSyncStatus('offline', 'Offline');
-            toast('⚠️ Gagal sync B2:B. Cek koneksi.', 'error', 3000);
-          }
+          if (!silent) setSyncStatus('offline', 'Offline');
         }
         
         if (!silent) showLibLoading(false);
       }
 
       function renderBooks() {
-  if (!DOM.bookScroll) return;
-  if (!state.books.length) {
-    DOM.bookScroll.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><div style="font-size:3rem;">📭</div><div>Belum ada buku di B2:B</div><div style="font-size:0.7rem;margin-top:8px;">Tambahkan link PDF di kolom B spreadsheet</div><div style="font-size:0.6rem;">Sheet: ' + SHEET_NAME + ' | Kolom B2:B</div></div>';
-    return;
-  }
-  
-  var icons = ['📕','📗','📘','📙','📓','📔','📒','📑','📖','📚'];
-  var html = '<div class="book-grid">';
-  
-  state.books.forEach(function(b, i) {
-    var fileId = b.fileId || extractFileId(b.url);
-    var rowNum = b.rowNumber || (i + 2);
-    
-    html += '<div class="book-card" data-fileid="' + escHtml(fileId) + '" data-title="' + escHtml(b.title) + '" data-url="' + escHtml(b.url) + '">';
-    
-    // Emoji buku
-    html += '<div class="emoji">' + icons[i % 10] + '</div>';
-    
-    // Judul buku
-    html += '<div class="title">' + escHtml(b.title) + '</div>';
-    
-    // Author (jika ada dan bukan Unknown Author)
-    if (b.author && b.author !== 'Unknown Author' && b.author !== '') {
-      html += '<div style="font-size:0.55rem;color:var(--accent);margin-top:3px;">✍️ ' + escHtml(b.author) + '</div>';
-    }
-    
-    // Link dari B2:B
-    html += '<div class="link">📎 B' + rowNum + ': ' + escHtml((b.url || '').substring(0, 35)) + '...</div>';
-    
-    // Badge: Kategori + Tahun Akademik + Auto-generated indicator
-    html += '<div class="badge">';
-    html += escHtml(b.category || 'PDF');
-    if (b.academicYear) {
-      html += ' · ' + escHtml(b.academicYear);
-    }
-    html += '</div>';
-    
-    // File ID (auto-generated, tampilkan sebagian)
-    if (fileId) {
-      html += '<div style="font-size:0.4rem;color:#555;margin-top:2px;">🆔 ' + escHtml(fileId.substring(0, 15)) + '...</div>';
-    }
-    
-    // Label auto-generated jika data di-generate otomatis
-    if (!b.title || b.title.indexOf('PDF Document') === 0 || b.category === 'Umum' || b.author === 'Unknown Author') {
-      html += '<div style="font-size:0.4rem;color:var(--warning);margin-top:1px;">⚡ Auto-generated</div>';
-    }
-    
-    html += '</div>';
-  });
-  
-  html += '</div>';
-  DOM.bookScroll.innerHTML = html;
-  
-  // Event listeners untuk setiap book card
-  DOM.bookScroll.querySelectorAll('.book-card').forEach(function(card) {
-    card.addEventListener('click', function() {
-      var fid = this.getAttribute('data-fileid');
-      var title = this.getAttribute('data-title');
-      var url = this.getAttribute('data-url');
-      var rowIndex = Array.from(this.parentNode.children).indexOf(this);
-      console.log('📖 B' + (rowIndex + 2) + ':', title, '| ID:', fid);
-      openBook(fid, title, url);
-    });
-  });
-}
+        if (!DOM.bookScroll) return;
+        if (!state.books.length) {
+          DOM.bookScroll.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><div style="font-size:3rem;">📭</div><div>Belum ada buku di B2:B</div><div style="font-size:0.7rem;">Tambahkan link PDF di kolom B</div></div>';
+          return;
+        }
+        
+        var icons = ['📕','📗','📘','📙','📓','📔','📒','📑','📖','📚'];
+        var html = '<div class="book-grid">';
+        state.books.forEach(function(b, i) {
+          var fileId = b.fileId || extractFileId(b.url);
+          var isCached = !!state.pdfCache[fileId];
+          html += '<div class="book-card' + (isCached ? ' cached' : '') + '" data-fileid="' + escHtml(fileId) + '" data-title="' + escHtml(b.title) + '" data-url="' + escHtml(b.url) + '">';
+          html += '<div class="emoji">' + icons[i % 10] + '</div>';
+          html += '<div class="title">' + escHtml(b.title) + '</div>';
+          if (b.author && b.author !== 'Unknown Author') {
+            html += '<div style="font-size:0.55rem;color:var(--accent);">✍️ ' + escHtml(b.author) + '</div>';
+          }
+          html += '<div class="link">📎 B' + (b.rowNumber || (i+2)) + '</div>';
+          html += '<div class="badge">' + escHtml(b.category || 'PDF') + '</div>';
+          html += '</div>';
+        });
+        html += '</div>';
+        DOM.bookScroll.innerHTML = html;
+        
+        DOM.bookScroll.querySelectorAll('.book-card').forEach(function(card) {
+          card.addEventListener('click', function() {
+            var fid = this.getAttribute('data-fileid');
+            var title = this.getAttribute('data-title');
+            var url = this.getAttribute('data-url');
+            openBook(fid, title, url);
+          });
+        });
+      }
 
-      // ============ OPEN BOOK ============
+      // ============ OPEN BOOK (WITH CACHE) ============
       async function openBook(fileId, title, url) {
-        console.log('📖 Opening B2:B PDF:', title, fileId);
+        console.log('📖 Opening:', title, fileId);
         state.currentBook = { fileId: fileId, title: title, url: url };
-        state.pdfDoc = null; state.totalPages = 10; state.totalSpreads = 5;
+        state.pdfDoc = null;
+        state.totalPages = 10; state.totalSpreads = 5;
         state.currentSpread = 0; state.isFlipping = false;
 
         if (DOM.readerBookTitle) DOM.readerBookTitle.textContent = title;
@@ -399,69 +379,82 @@
         if (DOM.pageLabelLeft) DOM.pageLabelLeft.textContent = '';
         if (DOM.pageLabelRight) DOM.pageLabelRight.textContent = '';
         updateNav();
-        showReaderLoading(true, 'Downloading PDF dari B2:B...', 5);
 
+        // CHECK CACHE FIRST
+        var cached = getCachedPDF(fileId);
+        if (cached) {
+          console.log('⚡ Using cached PDF!');
+          showReaderLoading(true, 'Loading from cache...');
+          
+          if (cached.pdfDoc) {
+            state.pdfDoc = cached.pdfDoc;
+            state.totalPages = cached.pages || state.pdfDoc.numPages || 10;
+            state.totalSpreads = Math.ceil(state.totalPages / 2);
+            await renderPDFSpread(0);
+            showReaderLoading(false);
+            updateNav();
+            toast('⚡ Loaded from cache!', 'success', 2000);
+            return;
+          }
+        }
+
+        // Download if not cached
+        showReaderLoading(true, 'Downloading PDF...');
+        
         try {
           var fullBase64 = '';
           var chunkIndex = 0;
-          var maxChunks = 200;
           
-          while (chunkIndex < maxChunks) {
+          while (chunkIndex < 200) {
             var chunkUrl = WEBAPP_URL + '?action=getPDFChunk&fileId=' + fileId + '&chunk=' + chunkIndex;
             try {
               var chunkRes = await fetch(chunkUrl);
               var chunkData = await chunkRes.json();
-              
-              if (!chunkData.success) {
-                if (chunkIndex === 0) throw new Error('Gagal akses PDF. Pastikan file ID benar: ' + fileId);
-                break;
-              }
-              
+              if (!chunkData.success) break;
               fullBase64 += chunkData.data;
               var totalChunks = chunkData.totalChunks || 1;
-              showReaderLoading(true, 'Downloading ' + (chunkIndex+1) + '/' + totalChunks, 5 + Math.round(((chunkIndex+1)/totalChunks)*40));
-              
+              showReaderLoading(true, 'Downloading ' + (chunkIndex+1) + '/' + totalChunks);
               if (chunkIndex >= totalChunks - 1) break;
               chunkIndex++;
-            } catch (e) {
-              if (chunkIndex === 0) throw e;
-              break;
-            }
+            } catch (e) { break; }
           }
 
-          if (!fullBase64) throw new Error('Data PDF kosong');
-          console.log('✅ Downloaded:', fullBase64.length, 'bytes');
+          if (!fullBase64) throw new Error('Gagal download PDF');
+          console.log('✅ Downloaded:', fullBase64.length);
 
-          showReaderLoading(true, 'Loading renderer...', 50);
-          await loadPDFJS();
-
-          if (typeof pdfjsLib === 'undefined') {
-            console.warn('PDF.js unavailable, using fallback');
-            showReaderLoading(true, 'Rendering preview...', 70);
-            renderFallbackSpread(0);
-            showReaderLoading(false);
-            updateNav();
-            toast('⚠️ Preview mode', 'error', 3000);
-            return;
-          }
-
-          showReaderLoading(true, 'Processing PDF...', 55);
+          // Render PDF
+          showReaderLoading(true, 'Rendering PDF...');
+          
           var binaryStr = atob(fullBase64);
           var bytes = new Uint8Array(binaryStr.length);
           for (var j = 0; j < binaryStr.length; j++) bytes[j] = binaryStr.charCodeAt(j);
 
-          var loadingTask = pdfjsLib.getDocument({ data: bytes });
-          state.pdfDoc = await loadingTask.promise;
-          state.totalPages = state.pdfDoc.numPages;
-          state.totalSpreads = Math.ceil(state.totalPages / 2);
-          state.currentSpread = 0;
-          console.log('✅ PDF:', state.totalPages, 'pages');
+          // Gunakan PDF.js yang sudah ada di memori (tidak perlu download ulang)
+          if (typeof pdfjsLib === 'undefined') {
+            await loadPDFJS();
+          }
 
-          showReaderLoading(true, 'Rendering pages...', 80);
-          await renderPDFSpread(0);
-          showReaderLoading(false);
-          updateNav();
-          toast('✅ ' + state.totalPages + ' halaman siap!', 'success', 2500);
+          if (typeof pdfjsLib !== 'undefined') {
+            var loadingTask = pdfjsLib.getDocument({ data: bytes, disableAutoFetch: true, disableStream: true });
+            state.pdfDoc = await loadingTask.promise;
+            state.totalPages = state.pdfDoc.numPages;
+            state.totalSpreads = Math.ceil(state.totalPages / 2);
+            
+            // CACHE PDF
+            setCachedPDF(fileId, fullBase64, state.pdfDoc);
+            state.pdfCache[fileId].pages = state.totalPages;
+            
+            await renderPDFSpread(0);
+            showReaderLoading(false);
+            updateNav();
+            toast('✅ ' + state.totalPages + ' halaman', 'success', 2000);
+          } else {
+            // Fallback tanpa PDF.js
+            renderFallbackSpread(0);
+            showReaderLoading(false);
+            updateNav();
+            toast('⚠️ Preview mode', 'error', 3000);
+          }
 
         } catch (e) {
           console.error('Error:', e);
@@ -473,30 +466,37 @@
         }
       }
 
+      // ============ PDF.JS LOADER (SILENT) ============
       function loadPDFJS() {
         return new Promise(function(resolve) {
-          if (typeof pdfjsLib !== 'undefined') { resolve(); return; }
-          var urls = [
-            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
-            'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js'
-          ];
-          function tryLoad(idx) {
-            if (idx >= urls.length) { resolve(); return; }
-            var s = document.createElement('script');
-            s.src = urls[idx];
-            s.onload = function() {
-              if (typeof pdfjsLib !== 'undefined') {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-              }
-              resolve();
-            };
-            s.onerror = function() { tryLoad(idx + 1); };
-            document.head.appendChild(s);
+          if (typeof pdfjsLib !== 'undefined') {
+            // Already loaded
+            try {
+              pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            } catch(e) {}
+            resolve(); return;
           }
-          tryLoad(0);
+          
+          // Coba load dari memory dulu (jika sudah di-cache browser)
+          var script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+          script.async = true;
+          script.onload = function() {
+            if (typeof pdfjsLib !== 'undefined') {
+              try { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } catch(e) {}
+              console.log('✅ PDF.js ready');
+            }
+            resolve();
+          };
+          script.onerror = function() {
+            console.warn('⚠️ PDF.js unavailable');
+            resolve();
+          };
+          document.head.appendChild(script);
         });
       }
 
+      // ============ RENDER FUNCTIONS ============
       async function renderPDFSpread(idx) {
         var lp = idx * 2 + 1, rp = lp + 1;
         if (lp <= state.totalPages) { await renderPDFPage(lp, DOM.pdfCanvasLeft); if (DOM.pageLabelLeft) DOM.pageLabelLeft.textContent = 'Hal ' + lp; }
@@ -538,13 +538,10 @@
         var h = canvas.parentElement.clientHeight - 10 || 400;
         canvas.width = w; canvas.height = h;
         ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
-        ctx.strokeStyle = '#ddd'; ctx.strokeRect(4, 4, w-8, h-8);
         ctx.fillStyle = '#333'; ctx.textAlign = 'center';
         ctx.font = 'bold 16px Georgia'; ctx.fillText('Halaman ' + num, w/2, h/3);
         ctx.font = '12px Georgia'; ctx.fillStyle = '#666';
         ctx.fillText(state.currentBook ? state.currentBook.title : 'PDF B2:B', w/2, h/3+28);
-        ctx.font = '10px Georgia'; ctx.fillStyle = '#999';
-        ctx.fillText('Sumber: B2:B Spreadsheet', w/2, h/2+20);
         ctx.font = 'italic 9px Georgia'; ctx.fillText('— ' + num + ' —', w/2, h-18);
       }
 
@@ -631,10 +628,7 @@
       window.addEventListener('resize', function() {
         clearTimeout(state._rt);
         state._rt = setTimeout(function() {
-          if (state.currentBook) {
-            if (state.pdfDoc) renderPDFSpread(state.currentSpread);
-            else renderFallbackSpread(state.currentSpread);
-          }
+          if (state.currentBook && state.pdfDoc) renderPDFSpread(state.currentSpread);
         }, 300);
       });
 
@@ -643,15 +637,13 @@
 
       // Service Worker
       if ('serviceWorker' in navigator) {
-        var swCode = 'self.addEventListener("install",function(e){e.waitUntil(self.skipWaiting())});self.addEventListener("activate",function(e){e.waitUntil(self.clients.claim())});self.addEventListener("fetch",function(e){e.respondWith(fetch(e.request).then(function(r){var c=r.clone();caches.open("dl-v19").then(function(ca){ca.put(e.request,c)});return r}).catch(function(){return caches.match(e.request)}))});';
+        var swCode = 'self.addEventListener("install",function(e){e.waitUntil(self.skipWaiting())});self.addEventListener("activate",function(e){e.waitUntil(self.clients.claim())});self.addEventListener("fetch",function(e){e.respondWith(fetch(e.request).then(function(r){var c=r.clone();caches.open("dl-v20").then(function(ca){ca.put(e.request,c)});return r}).catch(function(){return caches.match(e.request)}))});';
         navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'application/javascript'}))).catch(function(){});
       }
 
-      console.log('📖 Digital Library - B2:B PDF Reader');
-      console.log('📊 Spreadsheet:', SPREADSHEET_ID);
-      console.log('📋 Sheet:', SHEET_NAME);
-      console.log('🔗 Kolom B2:B -> Link PDF');
-      console.log('✅ PWA | Responsive | Base64 | Live Sync');
+      console.log('📖 Digital Library - B2:B + Cache');
+      console.log('✅ Cache enabled (max ' + PDF_CACHE_MAX + ' PDFs, TTL ' + (PDF_CACHE_TTL/60000) + 'min)');
+      console.log('✅ PDF.js silent loading');
       
       fetchBooks(false);
       state.syncTimer = setInterval(function() { if (!state.currentBook) fetchBooks(true); }, 10000);
