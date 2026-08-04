@@ -6,10 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#8B5A2B">
-  <title>📖 E-Book Edukasi Interaktif</title>
+  <title>📖 E-Book Digital Flip</title>
   
-  <!-- Manifest PWA -->
-  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkUtQm9vayBFZHVrYXNpIEludGVyYWt0aWYiLAogICJzaG9ydF9uYW1lIjogIkUtQm9vayIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZmFmM2UwIiwKICAidGhlbWVfY29sb3IiOiAiIzhiNWEyYiIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vaS5pbWd1ci5jb20vSmt4UllkNi5wbmciLAogICAgICAic2l6ZXMiOiAiMTkyeDE5MiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdCn0=">
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkUtQm9vayBEaWdpdGFsIEZsaXAiLAogICJzaG9ydF9uYW1lIjogIkUtQm9vayIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZmFmM2UwIiwKICAidGhlbWVfY29sb3IiOiAiIzhiNWEyYiIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vaS5pbWd1ci5jb20vSmt4UllkNi5wbmciLAogICAgICAic2l6ZXMiOiAiMTkyeDE5MiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdCn0=">
   
   <style>
     * {
@@ -19,245 +18,282 @@
     }
 
     body {
-      font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, sans-serif;
-      background: #faf3e0;
-      background-image: radial-gradient(circle at 20% 30%, rgba(139, 90, 43, 0.08) 0%, transparent 30%),
-                        radial-gradient(circle at 80% 70%, rgba(210, 180, 140, 0.1) 0%, transparent 40%);
+      font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
+      background: linear-gradient(135deg, #f5e6d3 0%, #e8d5b7 50%, #f0e0c8 100%);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-      margin: 0;
+      padding: 15px;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
     }
 
-    /* Container utama buku */
-    .ebook-container {
+    .app-container {
       width: 100%;
-      max-width: 1100px;
-      height: 90vh;
-      max-height: 800px;
-      position: relative;
+      max-width: 900px;
+      height: 95vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      perspective: 2000px;
+      gap: 15px;
     }
 
-    /* Area buku yang bisa dibalik */
-    .book {
+    /* Library View */
+    .library-view {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .library-title {
+      text-align: center;
+      font-size: 2rem;
+      color: #5c3a1e;
+      margin-bottom: 30px;
+      font-family: 'Georgia', serif;
+    }
+
+    .book-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .book-card {
+      background: linear-gradient(135deg, #fff8f0, #fff3e4);
+      border-radius: 15px;
+      padding: 25px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 2px solid #d2b48c;
+      box-shadow: 0 4px 15px rgba(139,90,43,0.1);
+      text-align: center;
+    }
+
+    .book-card:hover {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 10px 30px rgba(139,90,43,0.2);
+      border-color: #8B5A2B;
+    }
+
+    .book-emoji {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+
+    .book-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #5c3a1e;
+      margin-bottom: 5px;
+    }
+
+    .book-url {
+      font-size: 0.75rem;
+      color: #8B5A2B;
+      opacity: 0.7;
+      word-break: break-all;
+    }
+
+    /* Reader View */
+    .reader-view {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .reader-view.active {
+      display: flex;
+    }
+
+    .library-view.hidden {
+      display: none;
+    }
+
+    .book-container {
+      width: 100%;
+      flex: 1;
+      perspective: 1500px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .flip-book {
+      width: 95%;
+      max-width: 750px;
+      height: 85vh;
+      max-height: 700px;
+      position: relative;
+      transform-style: preserve-3d;
+    }
+
+    .page {
+      position: absolute;
       width: 100%;
       height: 100%;
+      background: linear-gradient(135deg, #fffef9 0%, #fef9f0 100%);
+      border-radius: 10px 25px 25px 10px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15), inset 0 0 30px rgba(139,90,43,0.05);
+      padding: 40px 35px;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      transform-style: preserve-3d;
-    }
-
-    /* Kartu halaman (dua halaman terbuka) */
-    .page-spread {
-      position: relative;
-      width: 95%;
-      height: 90%;
-      background: #fff8ee;
-      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20 20 L80 20 L80 80 L20 80 Z" fill="none" stroke="%23d2b48c" stroke-width="0.5" opacity="0.2"/></svg>');
-      border-radius: 8px 20px 20px 8px;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25), inset 0 0 30px rgba(139,90,43,0.1);
-      display: flex;
-      overflow: hidden;
-      transform-style: preserve-3d;
-      transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      flex-direction: column;
+      transform-origin: left center;
+      transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+      backface-visibility: hidden;
+      overflow-y: auto;
       border: 1px solid #d2b48c;
     }
 
-    /* Efek lipatan tengah */
-    .page-spread::before {
-      content: "";
-      position: absolute;
-      left: 50%;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: linear-gradient(to right, rgba(139,90,43,0.2), rgba(139,90,43,0.4), rgba(139,90,43,0.2));
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-      z-index: 10;
-      transform: translateX(-50%);
+    .page.flipped {
+      transform: rotateY(-180deg);
+      z-index: 1;
     }
 
-    /* Halaman kiri dan kanan */
-    .page-left, .page-right {
-      width: 50%;
-      height: 100%;
-      padding: 2.5rem 2rem;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow-y: auto;
-      background: #fffcf5;
-      transition: background 0.3s;
-    }
-
-    .page-left {
-      border-right: none;
-      background: #fffaf2;
-    }
-
-    .page-right {
-      background: #fffcf7;
-    }
-
-    /* Konten halaman */
     .page-content {
       flex: 1;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
     }
 
-    .chapter-badge {
+    .chapter-tag {
+      display: inline-block;
+      background: linear-gradient(135deg, #8B5A2B, #a0724d);
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
       font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      color: #8B5A2B;
-      margin-bottom: 0.8rem;
       font-weight: 600;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+      width: fit-content;
     }
 
-    h2 {
-      font-size: 2rem;
+    .page-title {
+      font-size: 1.8rem;
       font-weight: 700;
-      color: #5c3a1e;
-      margin-bottom: 1.2rem;
+      color: #3d2b1a;
+      margin-bottom: 15px;
+      font-family: 'Georgia', serif;
       line-height: 1.3;
-      font-family: 'Georgia', 'Times New Roman', serif;
     }
 
-    p {
-      font-size: 1rem;
-      line-height: 1.7;
-      color: #4a3a2a;
-      margin-bottom: 1rem;
+    .page-text {
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color: #4a3728;
       text-align: justify;
+      margin-bottom: 20px;
+      flex: 1;
     }
 
-    .illustration {
+    .page-illustration {
       width: 100%;
-      height: 180px;
-      background: linear-gradient(135deg, #f3e5d8, #e6d2b5);
+      height: 150px;
+      background: linear-gradient(135deg, #f3e5d8, #e8d5c0);
       border-radius: 12px;
-      margin: 1rem 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 3rem;
+      font-size: 3.5rem;
+      margin: 15px 0;
+      box-shadow: inset 0 2px 10px rgba(139,90,43,0.15);
+    }
+
+    .page-footer {
+      text-align: center;
       color: #8B5A2B;
-      box-shadow: inset 0 2px 10px rgba(139,90,43,0.2);
-      transition: all 0.4s;
+      font-size: 0.85rem;
+      margin-top: 15px;
+      font-weight: 500;
     }
 
-    .illustration:hover {
-      transform: scale(1.02);
-      box-shadow: 0 10px 20px rgba(139,90,43,0.3);
-    }
-
-    /* Logo di pojok */
-    .logo-corner {
+    .logo-watermark {
       position: absolute;
       bottom: 15px;
-      right: 25px;
-      width: 50px;
-      height: 50px;
-      background-image: url('https://i.imgur.com/JkxRYd6.png');
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      opacity: 0.7;
-      z-index: 20;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      background: url('https://i.imgur.com/JkxRYd6.png') center/contain no-repeat;
+      opacity: 0.5;
+      z-index: 5;
     }
 
-    .logo-corner-left {
-      left: 25px;
-      right: auto;
-    }
-
-    /* Navigasi */
+    /* Navigation */
     .navigation {
       display: flex;
-      justify-content: center;
       align-items: center;
-      gap: 25px;
-      margin-top: 25px;
-      flex-wrap: wrap;
+      gap: 20px;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.8);
+      border-radius: 50px;
+      backdrop-filter: blur(10px);
     }
 
     .nav-btn {
-      background: #8B5A2B;
+      background: linear-gradient(145deg, #8B5A2B, #6b4320);
       border: none;
       color: white;
-      font-size: 1.8rem;
-      width: 55px;
-      height: 55px;
+      font-size: 1.3rem;
+      width: 45px;
+      height: 45px;
       border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 10px rgba(139,90,43,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 8px 15px rgba(139,90,43,0.3);
-      transition: all 0.25s ease;
-      background: linear-gradient(145deg, #9b6b3d, #7a4e26);
-      border: 1px solid #b8864b;
     }
 
     .nav-btn:active {
       transform: scale(0.9);
-      box-shadow: 0 4px 8px rgba(139,90,43,0.4);
     }
 
     .nav-btn:disabled {
-      opacity: 0.4;
-      transform: none;
+      opacity: 0.3;
       pointer-events: none;
-      filter: grayscale(40%);
     }
 
-    .page-indicator {
+    .page-counter {
       font-weight: 700;
-      font-size: 1.2rem;
-      background: rgba(139,90,43,0.1);
-      padding: 0.5rem 1.5rem;
-      border-radius: 30px;
       color: #5c3a1e;
-      letter-spacing: 1px;
-      backdrop-filter: blur(5px);
+      background: rgba(139,90,43,0.1);
+      padding: 8px 20px;
+      border-radius: 25px;
+      font-size: 0.95rem;
+      min-width: 100px;
+      text-align: center;
     }
 
-    /* Animasi flip */
-    .flip-left {
-      animation: flipLeftPage 0.6s ease-out;
+    .back-btn {
+      background: transparent;
+      border: 2px solid #8B5A2B;
+      color: #8B5A2B;
+      font-size: 0.9rem;
+      padding: 8px 15px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
 
-    .flip-right {
-      animation: flipRightPage 0.6s ease-out;
+    .back-btn:hover {
+      background: #8B5A2B;
+      color: white;
     }
 
-    @keyframes flipLeftPage {
-      0% { transform: rotateY(0); }
-      40% { transform: rotateY(-12deg); }
-      100% { transform: rotateY(0); }
-    }
-
-    @keyframes flipRightPage {
-      0% { transform: rotateY(0); }
-      40% { transform: rotateY(12deg); }
-      100% { transform: rotateY(0); }
-    }
-
-    /* Loading & status */
-    .loading-spinner {
+    .loading-screen {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -269,181 +305,224 @@
     .spinner {
       width: 50px;
       height: 50px;
-      border: 5px solid #f3e5d8;
-      border-top: 5px solid #8B5A2B;
+      border: 4px solid #f3e5d8;
+      border-top: 4px solid #8B5A2B;
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin-bottom: 1rem;
+      margin-bottom: 15px;
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      to { transform: rotate(360deg); }
     }
 
-    .error-message {
-      color: #b33a3a;
-      background: #ffe6e6;
-      padding: 1rem;
-      border-radius: 12px;
-      text-align: center;
-    }
-
-    /* Responsif */
-    @media (max-width: 700px) {
-      .page-spread {
-        flex-direction: column;
-        border-radius: 12px;
+    @media (max-width: 600px) {
+      .page {
+        padding: 25px 20px;
+        border-radius: 10px 20px 20px 10px;
       }
-      .page-spread::before {
-        display: none;
+      .page-title {
+        font-size: 1.4rem;
       }
-      .page-left, .page-right {
-        width: 100%;
-        height: 50%;
-        padding: 1.5rem;
+      .page-text {
+        font-size: 0.95rem;
       }
-      h2 {
-        font-size: 1.5rem;
-      }
-      .illustration {
+      .page-illustration {
         height: 120px;
-        font-size: 2rem;
+        font-size: 2.5rem;
       }
     }
   </style>
 </head>
 <body>
-  <div class="ebook-container">
-    <div class="book" id="book">
-      <div class="page-spread" id="pageSpread">
-        <!-- Halaman kiri -->
-        <div class="page-left" id="leftPage">
-          <div class="page-content" id="leftContent">
-            <div class="loading-spinner">
-              <div class="spinner"></div>
-              <span>Memuat E-Book...</span>
-            </div>
-          </div>
-          <div class="logo-corner logo-corner-left"></div>
-        </div>
-        <!-- Halaman kanan -->
-        <div class="page-right" id="rightPage">
-          <div class="page-content" id="rightContent">
-            <div class="loading-spinner">
-              <div class="spinner"></div>
-            </div>
-          </div>
-          <div class="logo-corner"></div>
+  <div class="app-container">
+    <!-- Library View -->
+    <div class="library-view" id="libraryView">
+      <div class="library-title">📚 Perpustakaan Digital</div>
+      <div class="book-grid" id="bookGrid">
+        <div class="loading-screen">
+          <div class="spinner"></div>
+          <span>Memuat koleksi buku...</span>
         </div>
       </div>
     </div>
 
-    <div class="navigation">
-      <button class="nav-btn" id="prevBtn" title="Halaman Sebelumnya">←</button>
-      <span class="page-indicator" id="pageIndicator">1 / 1</span>
-      <button class="nav-btn" id="nextBtn" title="Halaman Berikutnya">→</button>
+    <!-- Reader View -->
+    <div class="reader-view" id="readerView">
+      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 20px;">
+        <button class="back-btn" id="backBtn">← Perpustakaan</button>
+        <span id="readerBookTitle" style="font-weight:600;color:#5c3a1e;"></span>
+      </div>
+      <div class="book-container">
+        <div class="flip-book" id="flipBook">
+          <div class="page" id="currentPage">
+            <div class="page-content" id="pageContent">
+              <div class="loading-screen">
+                <div class="spinner"></div>
+                <span>Membuka buku...</span>
+              </div>
+            </div>
+            <div class="logo-watermark"></div>
+          </div>
+        </div>
+      </div>
+      <div class="navigation">
+        <button class="nav-btn" id="prevPageBtn">◀</button>
+        <span class="page-counter" id="pageCounter">0 / 0</span>
+        <button class="nav-btn" id="nextPageBtn">▶</button>
+      </div>
     </div>
   </div>
 
   <script>
     (function() {
-      // Konfigurasi
+      const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwG0iQUK0-2evTzBfjM3pmEVBHDrlzroyJzdk-9ZfrSaA8l7POsziMHSXjSitUWeZrN/exec';
       
-      const WEBAPP_URL = `https://script.google.com/macros/s/AKfycbwG0iQUK0-2evTzBfjM3pmEVBHDrlzroyJzdk-9ZfrSaA8l7POsziMHSXjSitUWeZrN/exec`; // Ganti dengan URL Web App Google Apps Script Anda setelah deploy
-      
-      // State
+      let books = [];
+      let currentBook = null;
+      let currentPageIndex = 0;
+      let totalPages = 0;
       let pagesData = [];
-      let currentSpreadIndex = 0; // indeks spread (dua halaman sekaligus)
-      let totalSpreads = 0;
 
       // DOM Elements
-      const leftContentDiv = document.getElementById('leftContent');
-      const rightContentDiv = document.getElementById('rightContent');
-      const pageSpread = document.getElementById('pageSpread');
-      const prevBtn = document.getElementById('prevBtn');
-      const nextBtn = document.getElementById('nextBtn');
-      const pageIndicator = document.getElementById('pageIndicator');
+      const libraryView = document.getElementById('libraryView');
+      const readerView = document.getElementById('readerView');
+      const bookGrid = document.getElementById('bookGrid');
+      const flipBook = document.getElementById('flipBook');
+      const currentPage = document.getElementById('currentPage');
+      const pageContent = document.getElementById('pageContent');
+      const pageCounter = document.getElementById('pageCounter');
+      const prevPageBtn = document.getElementById('prevPageBtn');
+      const nextPageBtn = document.getElementById('nextPageBtn');
+      const backBtn = document.getElementById('backBtn');
+      const readerBookTitle = document.getElementById('readerBookTitle');
 
-      // Fungsi untuk mengambil data dari Google Spreadsheet melalui Web App
-      async function fetchSpreadsheetData() {
+      async function fetchBooks() {
         try {
-          // Gunakan URL Web App yang sudah di-deploy (pastikan deploy dengan akses "Anyone")
           const response = await fetch(WEBAPP_URL);
-          if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+          if (!response.ok) throw new Error('HTTP ' + response.status);
           const data = await response.json();
           
-          if (data && data.pages && Array.isArray(data.pages)) {
-            pagesData = data.pages;
-            // Pastikan jumlah halaman genap dengan menambah halaman kosong jika ganjil
-            if (pagesData.length % 2 !== 0) {
-              pagesData.push({ 
-                title: "", 
-                content: "", 
-                chapter: "", 
-                illustration: "" 
-              });
-            }
-            totalSpreads = Math.ceil(pagesData.length / 2);
-            currentSpreadIndex = 0;
-            renderCurrentSpread();
+          if (data.success && data.books) {
+            books = data.books;
+            renderLibrary();
           } else {
-            throw new Error("Format data tidak valid");
+            throw new Error('Format data tidak valid');
           }
         } catch (error) {
-          console.error("Gagal memuat data:", error);
-          leftContentDiv.innerHTML = `<div class="error-message">⚠️ Gagal memuat konten. Pastikan Web App sudah dideploy.<br><small>${error.message}</small></div>`;
-          rightContentDiv.innerHTML = `<div class="error-message">🔗 Periksa koneksi dan URL Web App.</div>`;
+          console.error('Gagal memuat buku:', error);
+          bookGrid.innerHTML = '<div style="text-align:center;color:#b33a3a;">⚠️ Gagal memuat koleksi. Pastikan Web App terhubung.</div>';
         }
       }
 
-      // Render halaman kiri dan kanan berdasarkan spread index
-      function renderCurrentSpread() {
-        if (!pagesData.length || totalSpreads === 0) return;
+      function renderLibrary() {
+        if (books.length === 0) {
+          bookGrid.innerHTML = '<div style="text-align:center;color:#8B5A2B;">📭 Belum ada buku. Tambahkan di spreadsheet.</div>';
+          return;
+        }
 
-        const leftPageIndex = currentSpreadIndex * 2;
-        const rightPageIndex = leftPageIndex + 1;
+        const emojis = ['📚', '🌍', '🔬', '📖', '🎨', '💡', '🚀', '🧬', '🏛️', '🎵'];
+        bookGrid.innerHTML = books.map(function(book, index) {
+          return `
+            <div class="book-card" onclick="openBook(${index})">
+              <div class="book-emoji">${emojis[index % emojis.length]}</div>
+              <div class="book-title">${escapeHTML(book.title)}</div>
+              <div class="book-url">📎 ${escapeHTML(book.url.substring(0, 40))}...</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      async function openBook(index) {
+        currentBook = books[index];
+        readerBookTitle.textContent = currentBook.title;
         
-        const leftPage = pagesData[leftPageIndex] || { title: "Halaman Kosong", content: "", chapter: "", illustration: "" };
-        const rightPage = pagesData[rightPageIndex] || { title: "Halaman Kosong", content: "", chapter: "", illustration: "" };
-
-        // Render kiri
-        leftContentDiv.innerHTML = createPageHTML(leftPage);
-        // Render kanan
-        rightContentDiv.innerHTML = createPageHTML(rightPage);
-
-        // Update indikator halaman
-        const displayLeft = leftPageIndex + 1;
-        const displayRight = Math.min(rightPageIndex + 1, pagesData.length);
-        pageIndicator.textContent = `${displayLeft} - ${displayRight} / ${pagesData.length}`;
-
-        // Update tombol navigasi
-        prevBtn.disabled = currentSpreadIndex === 0;
-        nextBtn.disabled = currentSpreadIndex >= totalSpreads - 1;
-
-        // Animasi subtle masuk
-        pageSpread.classList.add('flip-right');
-        setTimeout(() => pageSpread.classList.remove('flip-right'), 600);
+        // Tampilkan loading
+        pageContent.innerHTML = '<div class="loading-screen"><div class="spinner"></div><span>Membuka buku...</span></div>';
+        libraryView.classList.add('hidden');
+        readerView.classList.add('active');
+        
+        try {
+          const response = await fetch(WEBAPP_URL + '?book=' + index);
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          const data = await response.json();
+          
+          if (data.success && data.pages) {
+            pagesData = data.pages;
+            totalPages = pagesData.length;
+            currentPageIndex = 0;
+            renderPage();
+          } else {
+            throw new Error('Gagal memuat halaman');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          // Fallback ke dummy pages
+          generateDummyPages();
+          totalPages = pagesData.length;
+          currentPageIndex = 0;
+          renderPage();
+        }
       }
 
-      // Membuat HTML untuk satu halaman
-      function createPageHTML(page) {
-        const chapterHTML = page.chapter ? `<div class="chapter-badge">📌 ${escapeHTML(page.chapter)}</div>` : '';
-        const titleHTML = page.title ? `<h2>${escapeHTML(page.title)}</h2>` : '';
-        const contentHTML = page.content ? `<p>${escapeHTML(page.content)}</p>` : '';
-        const illustrationHTML = page.illustration ? 
-          `<div class="illustration">${escapeHTML(page.illustration.substring(0, 8))}${page.illustration.length > 8 ? '...' : ''}</div>` : 
-          '';
+      function generateDummyPages() {
+        const dummyContent = [
+          { chapter: 'Pendahuluan', title: currentBook.title, content: 'Selamat datang di e-book ini. Konten akan dimuat dari dokumen yang terhubung.', illustration: '📚' },
+          { chapter: 'Bab 1', title: 'Memulai Perjalanan', content: 'Setiap pengetahuan dimulai dengan langkah pertama. Mari eksplorasi bersama.', illustration: '🚀' },
+          { chapter: 'Bab 2', title: 'Menggali Lebih Dalam', content: 'Semakin dalam kita menggali, semakin banyak yang kita temukan.', illustration: '🔍' },
+          { chapter: 'Kesimpulan', title: 'Penutup', content: 'Terima kasih telah membaca. Kembali ke perpustakaan untuk buku lainnya.', illustration: '📖' }
+        ];
+        pagesData = dummyContent.map(function(item, i) {
+          return { ...item, pageNumber: i + 1 };
+        });
+      }
 
-        return `
-          ${chapterHTML}
-          ${titleHTML}
-          ${illustrationHTML}
-          ${contentHTML}
+      function renderPage() {
+        if (!pagesData.length) return;
+        
+        const page = pagesData[currentPageIndex];
+        
+        pageContent.innerHTML = `
+          ${page.chapter ? `<div class="chapter-tag">📌 ${escapeHTML(page.chapter)}</div>` : ''}
+          <div class="page-title">${escapeHTML(page.title)}</div>
+          ${page.illustration ? `<div class="page-illustration">${escapeHTML(page.illustration)}</div>` : ''}
+          <div class="page-text">${escapeHTML(page.content)}</div>
+          <div class="page-footer">Halaman ${page.pageNumber || (currentPageIndex + 1)} dari ${totalPages}</div>
         `;
+        
+        pageCounter.textContent = `${currentPageIndex + 1} / ${totalPages}`;
+        prevPageBtn.disabled = currentPageIndex === 0;
+        nextPageBtn.disabled = currentPageIndex >= totalPages - 1;
+        
+        // Reset flip state
+        currentPage.classList.remove('flipped');
       }
 
-      // Escape HTML sederhana
+      function flipPage(direction) {
+        if (direction === 'next' && currentPageIndex < totalPages - 1) {
+          currentPage.classList.add('flipped');
+          setTimeout(function() {
+            currentPageIndex++;
+            currentPage.classList.remove('flipped');
+            renderPage();
+          }, 300);
+        } else if (direction === 'prev' && currentPageIndex > 0) {
+          currentPage.classList.add('flipped');
+          setTimeout(function() {
+            currentPageIndex--;
+            currentPage.classList.remove('flipped');
+            renderPage();
+          }, 300);
+        }
+      }
+
+      function goBackToLibrary() {
+        readerView.classList.remove('active');
+        libraryView.classList.remove('hidden');
+        currentBook = null;
+        pagesData = [];
+      }
+
       function escapeHTML(str) {
         return String(str)
           .replace(/&/g, '&amp;')
@@ -453,98 +532,48 @@
           .replace(/'/g, '&#039;');
       }
 
-      // Navigasi
-      function goToPrevSpread() {
-        if (currentSpreadIndex > 0) {
-          currentSpreadIndex--;
-          pageSpread.classList.add('flip-left');
-          renderCurrentSpread();
-          setTimeout(() => pageSpread.classList.remove('flip-left'), 600);
-        }
-      }
-
-      function goToNextSpread() {
-        if (currentSpreadIndex < totalSpreads - 1) {
-          currentSpreadIndex++;
-          pageSpread.classList.add('flip-right');
-          renderCurrentSpread();
-          setTimeout(() => pageSpread.classList.remove('flip-right'), 600);
-        }
-      }
-
-      // Event listeners
-      prevBtn.addEventListener('click', goToPrevSpread);
-      nextBtn.addEventListener('click', goToNextSpread);
-
+      // Event Listeners
+      prevPageBtn.addEventListener('click', function() { flipPage('prev'); });
+      nextPageBtn.addEventListener('click', function() { flipPage('next'); });
+      backBtn.addEventListener('click', goBackToLibrary);
+      
       // Keyboard navigation
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          goToPrevSpread();
-        } else if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          goToNextSpread();
-        }
+      document.addEventListener('keydown', function(e) {
+        if (!currentBook) return;
+        if (e.key === 'ArrowLeft') { e.preventDefault(); flipPage('prev'); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); flipPage('next'); }
+        if (e.key === 'Escape') { goBackToLibrary(); }
       });
 
-      // Touch swipe support
+      // Touch swipe
       let touchStartX = 0;
-      document.addEventListener('touchstart', (e) => {
+      document.addEventListener('touchstart', function(e) {
         touchStartX = e.changedTouches[0].screenX;
       }, {passive: true});
-
-      document.addEventListener('touchend', (e) => {
-        if (!touchStartX) return;
-        const touchEndX = e.changedTouches[0].screenX;
-        const diff = touchStartX - touchEndX;
+      
+      document.addEventListener('touchend', function(e) {
+        if (!currentBook || !touchStartX) return;
+        const diff = touchStartX - e.changedTouches[0].screenX;
         if (Math.abs(diff) > 50) {
-          if (diff > 0) goToNextSpread();
-          else goToPrevSpread();
+          flipPage(diff > 0 ? 'next' : 'prev');
         }
         touchStartX = 0;
       });
 
-      // Dummy data fallback jika Web App belum siap (untuk demo)
-      function loadDummyData() {
-        pagesData = [
-          { chapter: "Bab 1", title: "Pengenalan Alam Semesta", content: "Alam semesta sangat luas dan penuh misteri. Dari planet hingga galaksi, semuanya bergerak dalam harmoni yang menakjubkan.", illustration: "🌌🌟" },
-          { chapter: "Bab 1", title: "Planet Bumi Kita", content: "Bumi adalah planet ketiga dari Matahari dan satu-satunya yang diketahui memiliki kehidupan. Dilindungi atmosfer yang sempurna.", illustration: "🌍🌿" },
-          { chapter: "Bab 2", title: "Ekosistem Hutan Hujan", content: "Hutan hujan tropis adalah rumah bagi jutaan spesies. Mereka menghasilkan oksigen dan menyerap karbon dioksida.", illustration: "🌳🐒" },
-          { chapter: "Bab 2", title: "Keanekaragaman Hayati", content: "Indonesia memiliki keanekaragaman hayati tertinggi di dunia. Dari orangutan Kalimantan hingga komodo di Nusa Tenggara.", illustration: "🐘🦜" },
-          { chapter: "Bab 3", title: "Teknologi Masa Depan", content: "AI dan robotika mengubah cara kita hidup. Mulai dari kendaraan otonom hingga asisten virtual pintar.", illustration: "🤖🚀" },
-          { chapter: "Bab 3", title: "Energi Terbarukan", content: "Panel surya dan turbin angin menjadi solusi energi bersih. Mengurangi ketergantungan pada bahan bakar fosil.", illustration: "☀️💨" }
-        ];
-        totalSpreads = Math.ceil(pagesData.length / 2);
-        currentSpreadIndex = 0;
-        renderCurrentSpread();
-      }
+      // Expose openBook ke global scope untuk onclick di HTML
+      window.openBook = openBook;
 
-      // Inisialisasi: coba fetch dari Google Sheets, fallback ke dummy jika gagal
-      async function initialize() {
-        try {
-          await fetchSpreadsheetData();
-          // Jika fetch berhasil tapi data kosong, gunakan dummy
-          if (!pagesData.length) {
-            console.warn("Data spreadsheet kosong, menggunakan data demo.");
-            loadDummyData();
-          }
-        } catch (err) {
-          console.log("Menggunakan data demo karena Web App belum terhubung.");
-          loadDummyData();
-        }
-      }
-
-      // Service Worker Registration for PWA
+      // PWA Service Worker
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('data:application/javascript;base64,DQovLyBTaW1wbGUgU0VydmljZSBXb3JrZXIgZm9yIFBXQQ0KY29uc3QgQ0FDSEVfTkFNRSA9ICdlYm9vay1wd2EtdjEnOw0KY29uc3QgVVJMU19UT19DQUNIRSA9IFsnLyddOw0KDQpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoJ2luc3RhbGwnLCBldmVudCA9PiB7DQogIGV2ZW50LndhaXRVbnRpbChzZWxmLnNraXBXYWl0aW5nKCkpOw0KfSk7DQoNCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignYWN0aXZhdGUnLCBldmVudCA9PiB7DQogIGV2ZW50LndhaXRVbnRpbChzZWxmLmNsaWVudHMuY2xhaW0oKSk7DQp9KTsNCg0Kc2VsZi5hZGRFdmVudExpc3RlbmVyKCdmZXRjaCcsIGV2ZW50ID0+IHsNCiAgZXZlbnQucmVzcG9uZFdpdGgoDQogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QpDQogICAgICAudGhlbihyZXNwb25zZSA9PiByZXNwb25zZSB8fCBmZXRjaChldmVudC5yZXF1ZXN0KSkNCiAgKTsNCn0pOw==')
-            .then(reg => console.log('SW registered'))
-            .catch(err => console.log('SW not registered', err));
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('data:application/javascript;base64,DQpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoJ2luc3RhbGwnLCBldmVudCA9PiB7DQogIGV2ZW50LndhaXRVbnRpbChzZWxmLnNraXBXYWl0aW5nKCkpOw0KfSk7DQpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoJ2FjdGl2YXRlJywgZXZlbnQgPT4gew0KICBldmVudC53YWl0VW50aWwoc2VsZi5jbGllbnRzLmNsYWltKCkpOw0KfSk7DQpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoJ2ZldGNoJywgZXZlbnQgPT4gew0KICBldmVudC5yZXNwb25kV2l0aChmZXRjaChldmVudC5yZXF1ZXN0KSk7DQp9KTs=')
+            .then(function(reg) { console.log('SW registered'); })
+            .catch(function(err) { console.log('SW failed', err); });
         });
       }
 
       // Start
-      initialize();
+      fetchBooks();
     })();
   </script>
 </body>
