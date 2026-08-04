@@ -1,15 +1,14 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="theme-color" content="#0a0a0a">
-  <title>📖 PDF Flip Book</title>
+  <title>📖 PDF Flip Book - RTL</title>
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js">
-  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   
   <style>
     :root {
@@ -32,6 +31,7 @@
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
       touch-action: pan-y;
+      direction: ltr; /* Body tetap LTR untuk layout */
     }
 
     .app {
@@ -117,7 +117,7 @@
       background: #0a0a0a;
       display: flex;
       flex-direction: column;
-      transform: translateX(105%);
+      transform: translateX(-105%);
       transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
       z-index: 20;
     }
@@ -134,6 +134,7 @@
       gap: 8px;
       flex-shrink: 0;
       z-index: 100;
+      flex-direction: row-reverse;
     }
 
     .btn-back {
@@ -145,6 +146,7 @@
       cursor: pointer;
       font-size: 0.75rem;
       transition: all 0.2s;
+      white-space: nowrap;
     }
 
     .btn-back:hover { background: rgba(255,255,255,0.12); }
@@ -187,18 +189,20 @@
       pointer-events: none;
     }
 
-    /* Book Spread Container */
+    /* Book Spread Container - RTL Layout */
+    /* Kanan: Halaman Ganjil (1,3,5...) | Kiri: Halaman Genap (2,4,6...) */
     .book-spread {
       width: 100%;
       height: 100%;
       max-width: 1000px;
       max-height: 700px;
       display: flex;
+      flex-direction: row;
       position: relative;
       z-index: 5;
     }
 
-    /* LEFT PAGE - Static */
+    /* LEFT PAGE - Genap (Static) */
     .page-left-container {
       width: 50%;
       height: 100%;
@@ -209,7 +213,7 @@
       position: absolute;
       inset: 0;
       background: var(--page-color);
-      border-radius: 8px 0 0 8px;
+      border-radius: 0 8px 8px 0;
       box-shadow: 0 2px 20px rgba(0,0,0,0.3);
       display: flex;
       flex-direction: column;
@@ -233,7 +237,7 @@
       background: #fff;
     }
 
-    /* RIGHT PAGE - Flippable */
+    /* RIGHT PAGE - Ganjil (Flippable) */
     .page-right-container {
       width: 50%;
       height: 100%;
@@ -247,17 +251,17 @@
       transform-style: preserve-3d;
       transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
       z-index: 10;
-      transform-origin: left center;
+      transform-origin: right center;
     }
 
     .page-right-back {
       position: absolute;
       inset: 0;
-      background: linear-gradient(to right, #e8dcc8, #d8ccb0);
+      background: linear-gradient(to left, #e8dcc8, #d8ccb0);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
-      transform: rotateY(180deg);
-      border-radius: 0 8px 8px 0;
+      transform: rotateY(-180deg);
+      border-radius: 8px 0 0 8px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -270,7 +274,7 @@
       background: var(--page-color);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
-      border-radius: 0 8px 8px 0;
+      border-radius: 8px 0 0 8px;
       box-shadow: 0 2px 20px rgba(0,0,0,0.3);
       display: flex;
       flex-direction: column;
@@ -367,6 +371,7 @@
       background: rgba(0,0,0,0.9);
       border-top: 1px solid rgba(255,255,255,0.05);
       flex-shrink: 0;
+      flex-direction: row-reverse;
     }
 
     .nav-btn {
@@ -406,6 +411,20 @@
       border: 1px solid rgba(255,255,255,0.08);
     }
 
+    /* Highlight untuk halaman ganjil (kanan) */
+    .page-right-front::before {
+      content: '';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      opacity: 0.5;
+      z-index: 5;
+    }
+
     @media (max-width: 768px) {
       .book-list { grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 8px; }
       .book-item { padding: 12px 8px; }
@@ -426,7 +445,7 @@
     <div class="library" id="library">
       <div class="lib-header">
         <h1>📚 Digital Library</h1>
-        <p>Two-Page Spread Flip Book</p>
+        <p>Right-to-Left Flip Book • Odd pages on right</p>
       </div>
       <div class="book-list" id="bookList">
         <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;padding:50px;color:#6b5e4e;">
@@ -439,7 +458,7 @@
     <!-- ===== READER ===== -->
     <div class="reader" id="reader">
       <div class="topbar">
-        <button class="btn-back" id="btnBack">← Library</button>
+        <button class="btn-back" id="btnBack">Library →</button>
         <div class="book-title-top" id="bookTitleTop">Select a book</div>
         <div class="page-info-top" id="pageInfoTop">Spread 1</div>
       </div>
@@ -448,17 +467,17 @@
         <div class="book-shadow"></div>
         
         <div class="book-spread">
-          <!-- LEFT PAGE (Static) -->
+          <!-- LEFT SIDE - HALAMAN GENAP (2,4,6...) - Static -->
           <div class="page-left-container">
             <div class="page-left">
               <div class="pdf-view-left" id="pdfViewLeft">
                 <canvas class="pdf-canvas-left" id="pdfCanvasLeft"></canvas>
               </div>
-              <div class="page-num" id="pageNumLeft">— Page 1 —</div>
+              <div class="page-num" id="pageNumLeft">— Page 2 —</div>
             </div>
           </div>
 
-          <!-- RIGHT PAGE (Flippable) -->
+          <!-- RIGHT SIDE - HALAMAN GANJIL (1,3,5...) - Flippable -->
           <div class="page-right-container">
             <div class="page-right-flip" id="pageFlip">
               <div class="page-right-back" id="pageBack">
@@ -468,7 +487,7 @@
                 <div class="pdf-view-right" id="pdfViewRight">
                   <canvas class="pdf-canvas-right" id="pdfCanvasRight"></canvas>
                 </div>
-                <div class="page-num" id="pageNumRight">— Page 2 —</div>
+                <div class="page-num" id="pageNumRight">— Page 1 —</div>
               </div>
             </div>
           </div>
@@ -483,9 +502,9 @@
       </div>
 
       <div class="bottombar">
-        <button class="nav-btn" id="btnPrev" disabled>◀</button>
-        <span class="page-indicator" id="pageIndicator">1-2 / 0</span>
         <button class="nav-btn" id="btnNext" disabled>▶</button>
+        <span class="page-indicator" id="pageIndicator">1-2 / 0</span>
+        <button class="nav-btn" id="btnPrev" disabled>◀</button>
       </div>
     </div>
   </div>
@@ -501,8 +520,6 @@
       
       if (typeof pdfjsLib !== 'undefined') {
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      } else {
-        console.error('PDF.js not loaded!');
       }
 
       // ============================================
@@ -573,9 +590,9 @@
         DOM.btnPrev.disabled = state.currentSpread <= 0 || state.isFlipping;
         DOM.btnNext.disabled = state.currentSpread >= state.totalSpreads - 1 || state.isFlipping;
         
-        var leftP = state.currentSpread * 2 + 1;
-        var rightP = Math.min(leftP + 1, state.totalPages);
-        DOM.pageIndicator.textContent = leftP + '-' + rightP + ' / ' + state.totalPages;
+        var oddPage = state.currentSpread * 2 + 1;
+        var evenPage = Math.min(oddPage + 1, state.totalPages);
+        DOM.pageIndicator.textContent = oddPage + '-' + evenPage + ' / ' + state.totalPages;
         DOM.pageInfoTop.textContent = 'Spread ' + (state.currentSpread + 1) + ' of ' + state.totalSpreads;
       }
 
@@ -622,7 +639,6 @@
           '</div>';
         }).join('');
 
-        // Tambahkan event listener ke setiap book item
         var items = DOM.bookList.querySelectorAll('.book-item');
         items.forEach(function(item) {
           item.addEventListener('click', function() {
@@ -651,7 +667,6 @@
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
         
-        // Clear canvases
         clearCanvas(DOM.pdfCanvasLeft);
         clearCanvas(DOM.pdfCanvasRight);
         clearCanvas(DOM.pdfCanvasBack);
@@ -691,7 +706,7 @@
         });
         
         loadingTask.promise.then(function(pdf) {
-          console.log('PDF loaded successfully! Pages:', pdf.numPages);
+          console.log('✅ PDF loaded! Pages:', pdf.numPages);
           state.pdfDoc = pdf;
           state.totalPages = pdf.numPages;
           state.totalSpreads = Math.ceil(pdf.numPages / 2);
@@ -701,7 +716,7 @@
           showLoading(false);
           updateNavButtons();
         }).catch(function(error) {
-          console.warn('Failed with URL:', urls[index], error.message);
+          console.warn('Failed URL:', urls[index], error.message);
           tryLoadPDF(urls, index + 1);
         });
       }
@@ -716,36 +731,39 @@
         state.totalSpreads = 1;
         state.currentSpread = 0;
         DOM.pageNumLeft.textContent = '';
-        DOM.pageNumRight.textContent = '— PDF Viewer —';
+        DOM.pageNumRight.textContent = '— PDF —';
         updateNavButtons();
       }
 
       // ============================================
       // RENDER SPREAD
+      // Layout: LEFT = Genap (2,4,6...) | RIGHT = Ganjil (1,3,5...)
       // ============================================
       function renderSpread(spreadIndex) {
         if (!state.pdfDoc) return;
         
         state.isRendering = true;
         
-        var leftPageNum = spreadIndex * 2 + 1;
-        var rightPageNum = leftPageNum + 1;
+        var oddPage = spreadIndex * 2 + 1;   // Halaman Ganjil (KANAN)
+        var evenPage = oddPage + 1;           // Halaman Genap (KIRI)
         
-        console.log('Rendering spread', spreadIndex, 'pages:', leftPageNum, rightPageNum);
+        console.log('📖 Rendering spread', spreadIndex, 
+                    '| RIGHT (odd):', oddPage, 
+                    '| LEFT (even):', evenPage);
         
-        // Render left page
-        if (leftPageNum <= state.totalPages) {
-          renderPageToCanvas(leftPageNum, DOM.pdfCanvasLeft);
-          DOM.pageNumLeft.textContent = '— Page ' + leftPageNum + ' —';
+        // Render LEFT page (GENAP)
+        if (evenPage <= state.totalPages) {
+          renderPageToCanvas(evenPage, DOM.pdfCanvasLeft);
+          DOM.pageNumLeft.textContent = '— Page ' + evenPage + ' —';
         } else {
           clearCanvas(DOM.pdfCanvasLeft);
           DOM.pageNumLeft.textContent = '';
         }
         
-        // Render right page
-        if (rightPageNum <= state.totalPages) {
-          renderPageToCanvas(rightPageNum, DOM.pdfCanvasRight);
-          DOM.pageNumRight.textContent = '— Page ' + rightPageNum + ' —';
+        // Render RIGHT page (GANJIL)
+        if (oddPage <= state.totalPages) {
+          renderPageToCanvas(oddPage, DOM.pdfCanvasRight);
+          DOM.pageNumRight.textContent = '— Page ' + oddPage + ' —';
         } else {
           clearCanvas(DOM.pdfCanvasRight);
           DOM.pageNumRight.textContent = '';
@@ -778,77 +796,75 @@
             background: '#ffffff',
           });
         }).catch(function(error) {
-          console.error('Render page error:', error);
+          console.error('Render error:', error);
           clearCanvas(canvas);
         });
       }
 
       // ============================================
       // FLIP ANIMATION
+      // Right page (odd) flips to the LEFT
       // ============================================
       function flipNext() {
         if (state.isFlipping || state.isRendering || state.currentSpread >= state.totalSpreads - 1) {
-          console.log('Cannot flip next:', state.isFlipping, state.isRendering, state.currentSpread, state.totalSpreads);
+          console.log('⛔ Cannot flip NEXT');
           return;
         }
         
-        console.log('Flipping NEXT from spread', state.currentSpread);
+        console.log('➡️ Flipping NEXT from spread', state.currentSpread);
         
         state.isFlipping = true;
         disableNav();
         
-        // Render next spread's left page on back canvas
-        var nextLeftPage = (state.currentSpread + 1) * 2 + 1;
-        if (nextLeftPage <= state.totalPages) {
-          renderPageToCanvas(nextLeftPage, DOM.pdfCanvasBack);
+        // Render next odd page on back canvas
+        var nextOddPage = (state.currentSpread + 1) * 2 + 1;
+        if (nextOddPage <= state.totalPages) {
+          renderPageToCanvas(nextOddPage, DOM.pdfCanvasBack);
         }
         
-        // Animate flip
+        // Halaman kanan flip ke kiri (rotateY 180deg dari origin right)
         DOM.pageFlip.style.transition = 'transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1)';
-        DOM.pageFlip.style.transform = 'rotateY(-180deg)';
+        DOM.pageFlip.style.transform = 'rotateY(180deg)';
         
         setTimeout(function() {
-          // Update spread
           state.currentSpread++;
           
           // Reset flip instantly
           DOM.pageFlip.style.transition = 'none';
           DOM.pageFlip.style.transform = 'rotateY(0deg)';
           
-          // Render new spread
           renderSpread(state.currentSpread);
           
           setTimeout(function() {
             DOM.pageFlip.style.transition = 'transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1)';
             updateNavButtons();
             state.isFlipping = false;
-            console.log('Flip NEXT complete, now at spread', state.currentSpread);
+            console.log('✅ NEXT complete, now at spread', state.currentSpread);
           }, 50);
         }, 700);
       }
 
       function flipPrev() {
         if (state.isFlipping || state.isRendering || state.currentSpread <= 0) {
-          console.log('Cannot flip prev:', state.isFlipping, state.isRendering, state.currentSpread);
+          console.log('⛔ Cannot flip PREV');
           return;
         }
         
-        console.log('Flipping PREV from spread', state.currentSpread);
+        console.log('⬅️ Flipping PREV from spread', state.currentSpread);
         
         state.isFlipping = true;
         disableNav();
         
-        // Render current spread's right page on back canvas
-        var prevRightPage = state.currentSpread * 2;
-        if (prevRightPage <= state.totalPages) {
-          renderPageToCanvas(prevRightPage, DOM.pdfCanvasBack);
+        // Render current odd page on back canvas
+        var currentOddPage = state.currentSpread * 2 + 1;
+        if (currentOddPage <= state.totalPages) {
+          renderPageToCanvas(currentOddPage, DOM.pdfCanvasBack);
         }
         
         // Set to flipped position
         DOM.pageFlip.style.transition = 'none';
-        DOM.pageFlip.style.transform = 'rotateY(-180deg)';
+        DOM.pageFlip.style.transform = 'rotateY(180deg)';
         
-        // Update spread
         state.currentSpread--;
         renderSpread(state.currentSpread);
         
@@ -860,7 +876,7 @@
           setTimeout(function() {
             updateNavButtons();
             state.isFlipping = false;
-            console.log('Flip PREV complete, now at spread', state.currentSpread);
+            console.log('✅ PREV complete, now at spread', state.currentSpread);
           }, 700);
         }, 50);
       }
@@ -876,22 +892,22 @@
       // ============================================
       // EVENT LISTENERS
       // ============================================
-      DOM.btnPrev.addEventListener('click', function() {
-        console.log('Prev button clicked');
-        flipPrev();
-      });
-
       DOM.btnNext.addEventListener('click', function() {
-        console.log('Next button clicked');
+        console.log('🖱️ NEXT button clicked');
         flipNext();
       });
 
+      DOM.btnPrev.addEventListener('click', function() {
+        console.log('🖱️ PREV button clicked');
+        flipPrev();
+      });
+
       DOM.btnBack.addEventListener('click', function() {
-        console.log('Back button clicked');
+        console.log('🖱️ BACK button clicked');
         goBack();
       });
 
-      // Keyboard
+      // Keyboard - Arrow RIGHT = flip NEXT (turn page)
       document.addEventListener('keydown', function(e) {
         if (!state.currentBook || state.isFlipping) return;
         
@@ -906,7 +922,7 @@
         }
       });
 
-      // Touch swipe on right page
+      // Touch swipe on right page (odd pages)
       var touchStartX = 0;
       var touchStartY = 0;
 
@@ -924,8 +940,10 @@
         
         if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
           if (dx > 0) {
+            // Swipe LEFT = flip NEXT (halaman kanan ke kiri)
             flipNext();
           } else {
+            // Swipe RIGHT = flip PREV
             flipPrev();
           }
         }
@@ -939,14 +957,17 @@
         var rect = DOM.pageFront.getBoundingClientRect();
         var x = e.clientX - rect.left;
         
+        // Klik kiri halaman (area dekat spine) = PREV
         if (x < rect.width * 0.3) {
           flipPrev();
-        } else if (x > rect.width * 0.7) {
+        } 
+        // Klik kanan halaman (area pinggir buku) = NEXT
+        else if (x > rect.width * 0.7) {
           flipNext();
         }
       });
 
-      // Resize
+      // Resize handler
       var resizeTimeout;
       window.addEventListener('resize', function() {
         clearTimeout(resizeTimeout);
@@ -960,16 +981,16 @@
       // ============================================
       // INIT
       // ============================================
-      console.log('📖 Initializing PDF Flip Book...');
+      console.log('📖 RTL Flip Book Initializing...');
+      console.log('📐 Layout: RIGHT = Odd pages (1,3,5...) | LEFT = Even pages (2,4,6...)');
       
-      // Check PDF.js
       if (typeof pdfjsLib === 'undefined') {
-        console.error('❌ PDF.js not loaded! Check script tag.');
-        DOM.bookList.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#c0392b;">❌ PDF.js failed to load. Please refresh.</div>';
+        console.error('❌ PDF.js not loaded!');
+        DOM.bookList.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#c0392b;">❌ PDF.js failed. Refresh page.</div>';
         return;
       }
       
-      console.log('✅ PDF.js loaded');
+      console.log('✅ PDF.js ready');
       
       // Service Worker
       if ('serviceWorker' in navigator) {
@@ -981,17 +1002,11 @@
         
         navigator.serviceWorker.register(URL.createObjectURL(swBlob))
           .then(function() { console.log('✅ SW registered'); })
-          .catch(function() { console.log('SW skipped'); });
+          .catch(function() {});
       }
       
-      // Fetch books
       fetchBooks();
-      
-      console.log('✅ PDF Flip Book Ready!');
-      console.log('📖 Open a book to start reading');
-      console.log('🖱️ Click edges of right page to flip');
-      console.log('⌨️ Use arrow keys to navigate');
-      console.log('📱 Swipe on right page to flip');
+      console.log('✅ Flip Book Ready!');
     })();
   </script>
 </body>
