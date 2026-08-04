@@ -319,35 +319,71 @@
       }
 
       function renderBooks() {
-        if (!DOM.bookScroll) return;
-        if (!state.books.length) {
-          DOM.bookScroll.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><div style="font-size:3rem;">📭</div><div>Belum ada buku di B2:B</div><div style="font-size:0.7rem;margin-top:8px;">Tambahkan link PDF di kolom B spreadsheet</div><div style="font-size:0.6rem;">Sheet: ' + SHEET_NAME + ' | Kolom B2:B</div></div>';
-          return;
-        }
-        var icons = ['📕','📗','📘','📙','📓','📔','📒','📑','📖','📚'];
-        var html = '<div class="book-grid">';
-        state.books.forEach(function(b, i) {
-          var fileId = b.fileId || extractFileId(b.url);
-          html += '<div class="book-card" data-fileid="' + escHtml(fileId) + '" data-title="' + escHtml(b.title) + '" data-url="' + escHtml(b.url) + '">';
-          html += '<div class="emoji">' + icons[i % 10] + '</div>';
-          html += '<div class="title">' + escHtml(b.title) + '</div>';
-          html += '<div class="link">📎 B' + (i+2) + ': ' + escHtml((b.url || '').substring(0, 35)) + '...</div>';
-          html += '<div class="badge">' + escHtml(b.category || 'PDF') + ' · ' + escHtml(b.academicYear || '') + '</div>';
-          html += '</div>';
-        });
-        html += '</div>';
-        DOM.bookScroll.innerHTML = html;
-        
-        DOM.bookScroll.querySelectorAll('.book-card').forEach(function(card) {
-          card.addEventListener('click', function() {
-            var fid = this.getAttribute('data-fileid');
-            var title = this.getAttribute('data-title');
-            var url = this.getAttribute('data-url');
-            console.log('📖 B' + (Array.from(this.parentNode.children).indexOf(this)+2) + ':', title, fid);
-            openBook(fid, title, url);
-          });
-        });
-      }
+  if (!DOM.bookScroll) return;
+  if (!state.books.length) {
+    DOM.bookScroll.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><div style="font-size:3rem;">📭</div><div>Belum ada buku di B2:B</div><div style="font-size:0.7rem;margin-top:8px;">Tambahkan link PDF di kolom B spreadsheet</div><div style="font-size:0.6rem;">Sheet: ' + SHEET_NAME + ' | Kolom B2:B</div></div>';
+    return;
+  }
+  
+  var icons = ['📕','📗','📘','📙','📓','📔','📒','📑','📖','📚'];
+  var html = '<div class="book-grid">';
+  
+  state.books.forEach(function(b, i) {
+    var fileId = b.fileId || extractFileId(b.url);
+    var rowNum = b.rowNumber || (i + 2);
+    
+    html += '<div class="book-card" data-fileid="' + escHtml(fileId) + '" data-title="' + escHtml(b.title) + '" data-url="' + escHtml(b.url) + '">';
+    
+    // Emoji buku
+    html += '<div class="emoji">' + icons[i % 10] + '</div>';
+    
+    // Judul buku
+    html += '<div class="title">' + escHtml(b.title) + '</div>';
+    
+    // Author (jika ada dan bukan Unknown Author)
+    if (b.author && b.author !== 'Unknown Author' && b.author !== '') {
+      html += '<div style="font-size:0.55rem;color:var(--accent);margin-top:3px;">✍️ ' + escHtml(b.author) + '</div>';
+    }
+    
+    // Link dari B2:B
+    html += '<div class="link">📎 B' + rowNum + ': ' + escHtml((b.url || '').substring(0, 35)) + '...</div>';
+    
+    // Badge: Kategori + Tahun Akademik + Auto-generated indicator
+    html += '<div class="badge">';
+    html += escHtml(b.category || 'PDF');
+    if (b.academicYear) {
+      html += ' · ' + escHtml(b.academicYear);
+    }
+    html += '</div>';
+    
+    // File ID (auto-generated, tampilkan sebagian)
+    if (fileId) {
+      html += '<div style="font-size:0.4rem;color:#555;margin-top:2px;">🆔 ' + escHtml(fileId.substring(0, 15)) + '...</div>';
+    }
+    
+    // Label auto-generated jika data di-generate otomatis
+    if (!b.title || b.title.indexOf('PDF Document') === 0 || b.category === 'Umum' || b.author === 'Unknown Author') {
+      html += '<div style="font-size:0.4rem;color:var(--warning);margin-top:1px;">⚡ Auto-generated</div>';
+    }
+    
+    html += '</div>';
+  });
+  
+  html += '</div>';
+  DOM.bookScroll.innerHTML = html;
+  
+  // Event listeners untuk setiap book card
+  DOM.bookScroll.querySelectorAll('.book-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var fid = this.getAttribute('data-fileid');
+      var title = this.getAttribute('data-title');
+      var url = this.getAttribute('data-url');
+      var rowIndex = Array.from(this.parentNode.children).indexOf(this);
+      console.log('📖 B' + (rowIndex + 2) + ':', title, '| ID:', fid);
+      openBook(fid, title, url);
+    });
+  });
+}
 
       // ============ OPEN BOOK ============
       async function openBook(fileId, title, url) {
