@@ -6,7 +6,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0a0a0a">
-  <title>📖 Digital Library | Flip Book</title>
+  <title>📖 Digital Library | E-Book Flip Reader</title>
   
   <link rel="icon" href="https://i.imgur.com/JkxRYd6.png">
   <link rel="apple-touch-icon" href="https://i.imgur.com/JkxRYd6.png">
@@ -18,13 +18,17 @@
       --text: #e0d5c5;
       --text-secondary: #8a7a6a;
       --accent: #c9a87c;
+      --accent-hover: #d4b896;
       --page-color: #fdf8f2;
+      --danger: #e74c3c;
+      --success: #27ae60;
+      --info: #3498db;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Georgia', 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Georgia', 'Segoe UI', system-ui, -apple-system, sans-serif;
       background: var(--bg);
       width: 100vw;
       height: 100vh;
@@ -38,77 +42,140 @@
 
     .app { width: 100%; height: 100%; display: flex; flex-direction: column; }
 
+    /* ===== HEADER ===== */
     .app-header {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 6px 14px;
+      padding: 8px 16px;
       background: rgba(10,10,10,0.95);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
       z-index: 100;
       flex-shrink: 0;
-      min-height: 48px;
+      min-height: 50px;
     }
 
-    .logo-container { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .logo-container { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
     .logo {
-      width: 34px;
-      height: 34px;
+      width: 36px;
+      height: 36px;
       border-radius: 8px;
       background: url('https://i.imgur.com/JkxRYd6.png') center/contain no-repeat;
       box-shadow: 0 2px 8px rgba(201,168,124,0.3);
     }
 
-    .app-title { color: var(--text); font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
+    .app-title {
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
 
-    .search-wrapper { flex: 1; position: relative; max-width: 350px; margin: 0 10px; }
-    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 0.85rem; pointer-events: none; z-index: 1; }
+    .search-wrapper { flex: 1; position: relative; max-width: 380px; margin: 0 auto; }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      pointer-events: none;
+      z-index: 1;
+    }
 
     .search-input {
       width: 100%;
-      padding: 7px 14px 7px 34px;
+      padding: 8px 16px 8px 36px;
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 20px;
+      border-radius: 22px;
       color: var(--text);
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       outline: none;
+      transition: all 0.3s ease;
       font-family: inherit;
     }
 
-    .search-input:focus { border-color: var(--accent); }
+    .search-input:focus {
+      border-color: var(--accent);
+      background: rgba(255,255,255,0.08);
+      box-shadow: 0 0 0 3px rgba(201,168,124,0.08);
+    }
+
     .search-input::placeholder { color: var(--text-secondary); }
 
-    .header-actions { display: flex; gap: 6px; flex-shrink: 0; overflow-x: auto; }
+    .search-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 0.8rem;
+      display: none;
+      background: none;
+      border: none;
+      padding: 4px 6px;
+    }
+
+    .search-clear.visible { display: block; }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+
     .header-actions::-webkit-scrollbar { height: 0; }
 
     .year-pill {
-      padding: 5px 10px;
-      border-radius: 14px;
+      padding: 6px 12px;
+      border-radius: 16px;
       background: rgba(201,168,124,0.1);
       color: var(--accent);
-      font-size: 0.68rem;
+      font-size: 0.7rem;
       font-weight: 600;
       cursor: pointer;
+      transition: all 0.2s;
       border: 1px solid rgba(201,168,124,0.2);
       white-space: nowrap;
       font-family: inherit;
     }
 
     .year-pill:hover { background: rgba(201,168,124,0.2); }
-    .year-pill.active { background: var(--accent); color: #1a1a1a; }
+    .year-pill.active { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
 
+    .refresh-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .refresh-btn:hover { background: rgba(255,255,255,0.12); }
+
+    /* ===== MAIN ===== */
     .main-content { flex: 1; position: relative; overflow: hidden; }
 
+    /* ===== LIBRARY ===== */
     .library-view {
       position: absolute;
       inset: 0;
       display: flex;
       flex-direction: column;
-      transition: all 0.35s;
+      transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
     }
 
     .library-view.hidden { opacity: 0; transform: scale(0.98); pointer-events: none; }
@@ -116,98 +183,140 @@
     .filter-row {
       display: flex;
       gap: 6px;
-      padding: 8px 14px;
+      padding: 10px 16px;
       overflow-x: auto;
       flex-shrink: 0;
+      -webkit-overflow-scrolling: touch;
     }
 
+    .filter-row::-webkit-scrollbar { height: 0; }
+
     .filter-chip {
-      padding: 5px 12px;
-      border-radius: 16px;
+      padding: 6px 14px;
+      border-radius: 18px;
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.06);
       color: var(--text-secondary);
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       white-space: nowrap;
       cursor: pointer;
+      transition: all 0.2s;
       font-family: inherit;
     }
 
-    .filter-chip:hover { background: rgba(255,255,255,0.08); }
-    .filter-chip.active { background: var(--accent); color: #1a1a1a; font-weight: 600; }
+    .filter-chip:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+    .filter-chip.active { background: var(--accent); color: #1a1a1a; border-color: var(--accent); font-weight: 600; }
 
     .book-scroll {
       flex: 1;
       overflow-y: auto;
-      padding: 0 14px 14px;
+      padding: 0 16px 16px;
+      scroll-behavior: smooth;
     }
 
     .book-scroll::-webkit-scrollbar { width: 4px; }
+    .book-scroll::-webkit-scrollbar-track { background: transparent; }
     .book-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
 
-    .year-group { margin-bottom: 18px; }
+    .year-group { margin-bottom: 20px; }
 
     .year-group-header {
       color: var(--accent);
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       font-weight: 700;
       letter-spacing: 1.5px;
-      padding: 10px 2px 6px;
+      padding: 12px 4px 8px;
       text-transform: uppercase;
       border-bottom: 1px solid rgba(255,255,255,0.04);
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       display: flex;
+      align-items: center;
       justify-content: space-between;
       position: sticky;
       top: 0;
       background: rgba(10,10,10,0.9);
       backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       z-index: 5;
     }
 
-    .year-group-header .book-count { font-size: 0.65rem; color: var(--text-secondary); font-weight: 400; }
+    .year-group-header .book-count {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
 
-    .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .book-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 10px;
+    }
 
     .book-card {
       background: var(--surface);
-      border-radius: 8px;
-      padding: 12px 8px;
+      border-radius: 10px;
+      padding: 14px 10px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.25s ease;
       text-align: center;
       position: relative;
       overflow: hidden;
       border: 1px solid transparent;
     }
 
-    .book-card:hover { border-color: rgba(201,168,124,0.3); transform: translateY(-2px); }
+    .book-card:hover {
+      border-color: rgba(201,168,124,0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    }
+
     .book-card:active { transform: scale(0.97); }
-    .book-card .card-emoji { font-size: 1.6rem; margin-bottom: 5px; }
+
+    .book-card .card-emoji {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      transition: transform 0.2s;
+    }
+
+    .book-card:hover .card-emoji { transform: scale(1.1); }
 
     .book-card .card-title {
       color: var(--text);
-      font-size: 0.72rem;
+      font-size: 0.75rem;
       font-weight: 600;
       line-height: 1.3;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      margin-bottom: 4px;
     }
 
-    .book-card .card-year { color: var(--text-secondary); font-size: 0.6rem; }
+    .book-card .card-year { color: var(--text-secondary); font-size: 0.62rem; }
+
     .book-card .card-badge {
       position: absolute;
-      top: 6px;
-      right: 6px;
-      font-size: 0.5rem;
+      top: 8px;
+      right: 8px;
+      font-size: 0.55rem;
       background: rgba(201,168,124,0.2);
       color: var(--accent);
-      padding: 2px 6px;
-      border-radius: 8px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
     }
 
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state .empty-icon { font-size: 4rem; margin-bottom: 12px; }
+    .empty-state .empty-text { font-size: 0.95rem; margin-bottom: 4px; }
+    .empty-state .empty-sub { font-size: 0.72rem; }
+
+    /* ===== READER ===== */
     .reader-view {
       position: absolute;
       inset: 0;
@@ -215,7 +324,7 @@
       display: flex;
       flex-direction: column;
       transform: translateX(105%);
-      transition: transform 0.4s;
+      transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
       z-index: 50;
     }
 
@@ -224,28 +333,38 @@
     .reader-topbar {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
+      gap: 10px;
+      padding: 8px 12px;
       background: rgba(0,0,0,0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       z-index: 60;
       flex-shrink: 0;
+      min-height: 44px;
     }
 
     .btn-back {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
       color: var(--text);
-      padding: 5px 10px;
-      border-radius: 14px;
+      padding: 6px 12px;
+      border-radius: 16px;
       cursor: pointer;
-      font-size: 0.72rem;
+      font-size: 0.75rem;
+      transition: all 0.2s;
       font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
     }
+
+    .btn-back:hover { background: rgba(255,255,255,0.14); }
 
     .reader-title {
       flex: 1;
       color: var(--text);
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       text-align: center;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -253,13 +372,15 @@
     }
 
     .reader-logo-sm {
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       background: url('https://i.imgur.com/JkxRYd6.png') center/contain no-repeat;
-      border-radius: 5px;
+      border-radius: 6px;
       flex-shrink: 0;
+      opacity: 0.8;
     }
 
+    /* Book Area */
     .book-area {
       flex: 1;
       position: relative;
@@ -274,6 +395,7 @@
     .book-spread { width: 100%; height: 100%; display: flex; position: relative; }
 
     .page-left-wrap { width: 50%; height: 100%; position: relative; }
+
     .page-left-inner {
       position: absolute;
       inset: 0;
@@ -288,11 +410,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 5px;
+      padding: 8px;
       overflow: hidden;
     }
 
-    .pdf-canvas-left { max-width: 100%; max-height: 100%; }
+    .pdf-canvas-left {
+      max-width: 100%;
+      max-height: 100%;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+    }
 
     .page-right-wrap { width: 50%; height: 100%; position: relative; perspective: 1500px; }
 
@@ -315,7 +441,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 5px;
+      padding: 8px;
     }
 
     .page-front-face {
@@ -334,13 +460,23 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 5px;
+      padding: 8px;
       overflow: hidden;
     }
 
-    .pdf-canvas-right, .pdf-canvas-back { max-width: 100%; max-height: 100%; }
+    .pdf-canvas-right, .pdf-canvas-back {
+      max-width: 100%;
+      max-height: 100%;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+    }
 
-    .page-label { text-align: center; padding: 3px; font-size: 0.55rem; color: #aaa; flex-shrink: 0; }
+    .page-label {
+      text-align: center;
+      padding: 4px;
+      font-size: 0.58rem;
+      color: #aaa;
+      flex-shrink: 0;
+    }
 
     .spine-line {
       position: absolute;
@@ -354,6 +490,7 @@
       pointer-events: none;
     }
 
+    /* Loading */
     .load-overlay {
       position: absolute;
       inset: 0;
@@ -373,127 +510,192 @@
       height: 44px;
       border: 3px solid rgba(255,255,255,0.08);
       border-top: 3px solid var(--accent);
+      border-right: 3px solid var(--accent);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .load-text { color: var(--text-secondary); margin-top: 10px; font-size: 0.75rem; }
-    .load-progress { width: 200px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 8px; overflow: hidden; }
-    .load-progress-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; width: 0%; }
+    .load-text {
+      color: var(--text-secondary);
+      margin-top: 12px;
+      font-size: 0.78rem;
+      letter-spacing: 0.5px;
+    }
 
+    .load-progress {
+      width: 220px;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .load-progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .retry-btn {
+      background: var(--accent);
+      color: #1a1a1a;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.8rem;
+      margin-top: 14px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .retry-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+    .retry-btn.hidden { display: none; }
+
+    /* Bottom Bar */
     .reader-bottombar {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 14px;
-      padding: 8px 16px;
+      gap: 16px;
+      padding: 10px 20px;
       background: rgba(0,0,0,0.9);
       flex-shrink: 0;
       z-index: 60;
     }
 
     .nav-btn {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
       color: var(--text);
-      font-size: 1rem;
+      font-size: 1.1rem;
       cursor: pointer;
+      transition: all 0.2s;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: var(--accent); }
+    .nav-btn:active:not(:disabled) { transform: scale(0.9); }
     .nav-btn:disabled { opacity: 0.15; cursor: not-allowed; }
 
     .page-indicator {
       color: var(--text);
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-weight: 600;
-      min-width: 90px;
+      min-width: 100px;
       text-align: center;
-      background: rgba(255,255,255,0.03);
-      padding: 5px 12px;
-      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      padding: 6px 14px;
+      border-radius: 14px;
+      letter-spacing: 0.5px;
     }
 
+    /* Toast */
     .toast {
       position: fixed;
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      padding: 10px 20px;
-      border-radius: 20px;
+      padding: 10px 22px;
+      border-radius: 22px;
       font-size: 0.8rem;
       z-index: 200;
       display: none;
-      animation: slideDown 0.3s;
+      animation: slideDown 0.3s ease;
       font-weight: 600;
+      letter-spacing: 0.3px;
     }
 
     .toast.show { display: block; }
-    .toast.error { background: #e74c3c; color: white; }
-    .toast.success { background: #27ae60; color: white; }
+    .toast.error { background: var(--danger); color: white; }
+    .toast.success { background: var(--success); color: white; }
+    .toast.info { background: var(--info); color: white; }
 
     @keyframes slideDown {
       from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
       to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 
+    /* Responsive */
     @media (max-width: 768px) {
-      .book-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
-      .book-card { padding: 10px 6px; }
-      .book-card .card-emoji { font-size: 1.4rem; }
-      .book-card .card-title { font-size: 0.68rem; }
-      .nav-btn { width: 34px; height: 34px; font-size: 0.9rem; }
+      .app-header { padding: 6px 10px; gap: 6px; }
+      .logo { width: 28px; height: 28px; }
+      .app-title { font-size: 0.85rem; }
+      .search-wrapper { max-width: 250px; }
+      .search-input { font-size: 0.75rem; padding: 6px 12px 6px 32px; }
+      .book-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+      .book-card { padding: 12px 8px; }
+      .book-card .card-emoji { font-size: 1.5rem; }
+      .book-card .card-title { font-size: 0.7rem; }
+      .reader-topbar { padding: 6px 8px; }
+      .reader-bottombar { padding: 8px 12px; gap: 12px; }
+      .nav-btn { width: 36px; height: 36px; font-size: 0.95rem; }
+      .page-indicator { font-size: 0.75rem; min-width: 80px; padding: 5px 10px; }
     }
 
     @media (max-width: 480px) {
-      .book-grid { grid-template-columns: repeat(2, 1fr); }
+      .book-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
       .app-header { flex-wrap: wrap; }
       .search-wrapper { order: 10; max-width: 100%; flex-basis: 100%; margin: 4px 0; }
+      .header-actions { order: 5; }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="app-header">
+    <!-- HEADER -->
+    <div class="app-header" id="appHeader">
       <div class="logo-container">
-        <div class="logo"></div>
+        <div class="logo" title="Digital Library Logo"></div>
         <span class="app-title">Digital Library</span>
       </div>
+      
       <div class="search-wrapper">
         <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" id="searchInput" placeholder="Cari buku...">
+        <input type="text" class="search-input" id="searchInput" placeholder="Cari judul, kategori, tahun...">
+        <button class="search-clear" id="searchClear" title="Hapus pencarian">✕</button>
       </div>
+      
       <div class="header-actions" id="yearBadges"></div>
+      
+      <button class="refresh-btn" id="refreshBtn" title="Refresh data">🔄</button>
     </div>
 
+    <!-- MAIN CONTENT -->
     <div class="main-content">
+      <!-- LIBRARY VIEW -->
       <div class="library-view" id="libraryView">
         <div class="filter-row" id="filterRow"></div>
         <div class="book-scroll" id="bookScroll">
           <div class="load-overlay" id="libLoading">
             <div class="spinner-ring"></div>
-            <div class="load-text">Memuat koleksi...</div>
+            <div class="load-text">Memuat koleksi buku...</div>
           </div>
         </div>
       </div>
 
+      <!-- READER VIEW -->
       <div class="reader-view" id="readerView">
         <div class="reader-topbar">
           <button class="btn-back" id="btnBack">← Kembali</button>
-          <div class="reader-title" id="readerBookTitle">Pilih buku</div>
-          <div class="reader-logo-sm"></div>
+          <div class="reader-title" id="readerBookTitle">Pilih buku untuk membaca</div>
+          <div class="reader-logo-sm" title="Logo"></div>
         </div>
 
         <div class="book-area">
           <div class="book-spread">
+            <!-- LEFT PAGE -->
             <div class="page-left-wrap">
               <div class="page-left-inner">
                 <div class="pdf-area-left" id="pdfAreaLeft">
@@ -503,6 +705,7 @@
               </div>
             </div>
 
+            <!-- RIGHT PAGE (FLIPPABLE) -->
             <div class="page-right-wrap">
               <div class="page-flip" id="pageFlip">
                 <div class="page-back-face" id="pageBackFace">
@@ -516,34 +719,47 @@
                 </div>
               </div>
             </div>
+
             <div class="spine-line"></div>
           </div>
 
+          <!-- LOADING OVERLAY -->
           <div class="load-overlay" id="readerLoading">
             <div class="spinner-ring"></div>
             <div class="load-text" id="readerLoadText">Membuka PDF...</div>
-            <div class="load-progress"><div class="load-progress-bar" id="loadProgressBar"></div></div>
+            <div class="load-progress">
+              <div class="load-progress-bar" id="loadProgressBar"></div>
+            </div>
+            <button class="retry-btn hidden" id="retryBtn">🔄 Coba Lagi</button>
           </div>
         </div>
 
+        <!-- BOTTOM BAR -->
         <div class="reader-bottombar">
-          <button class="nav-btn" id="btnPrev" disabled>◀</button>
+          <button class="nav-btn" id="btnPrev" disabled title="Halaman sebelumnya">◀</button>
           <span class="page-indicator" id="pageIndicator">0 / 0</span>
-          <button class="nav-btn" id="btnNext" disabled>▶</button>
+          <button class="nav-btn" id="btnNext" disabled title="Halaman berikutnya">▶</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- TOAST NOTIFICATION -->
   <div class="toast" id="toast"></div>
 
   <script>
     (function() {
       'use strict';
 
-      // GANTI DENGAN URL WEB APP ANDA SETELAH DEPLOY
+      // ============================================
+      // CONFIGURATION
+      // ============================================
       const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwG0iQUK0-2evTzBfjM3pmEVBHDrlzroyJzdk-9ZfrSaA8l7POsziMHSXjSitUWeZrN/exec';
-      
+      const CACHE_DURATION = 10 * 60 * 1000; // 10 menit
+
+      // ============================================
+      // STATE
+      // ============================================
       const state = {
         allBooks: [],
         groupedBooks: {},
@@ -558,8 +774,12 @@
         activeYear: '',
         activeCategory: '',
         searchQuery: '',
+        booksCache: { data: null, timestamp: 0 }
       };
 
+      // ============================================
+      // DOM ELEMENTS
+      // ============================================
       const $ = (id) => document.getElementById(id);
       
       const DOM = {
@@ -569,10 +789,13 @@
         filterRow: $('filterRow'),
         yearBadges: $('yearBadges'),
         searchInput: $('searchInput'),
+        searchClear: $('searchClear'),
+        refreshBtn: $('refreshBtn'),
         readerView: $('readerView'),
         readerLoading: $('readerLoading'),
         readerLoadText: $('readerLoadText'),
         loadProgressBar: $('loadProgressBar'),
+        retryBtn: $('retryBtn'),
         pageFlip: $('pageFlip'),
         pageFrontFace: $('pageFrontFace'),
         pdfCanvasLeft: $('pdfCanvasLeft'),
@@ -588,91 +811,150 @@
         toast: $('toast'),
       };
 
-      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+      // ============================================
+      // UTILITY FUNCTIONS
+      // ============================================
+      const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
       
-      const escHtml = (s) => {
-        if (!s) return '';
-        return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]);
+      const escHtml = (str) => {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, m => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        })[m]);
       };
 
-      function showToast(msg, type = 'info', dur = 3000) {
+      const debounce = (fn, delay) => {
+        let timer;
+        return function(...args) {
+          clearTimeout(timer);
+          timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+      };
+
+      function showToast(msg, type = 'info', duration = 3000) {
         DOM.toast.textContent = msg;
         DOM.toast.className = 'toast show ' + type;
-        setTimeout(() => DOM.toast.classList.remove('show'), dur);
+        clearTimeout(state._toastTimer);
+        state._toastTimer = setTimeout(() => DOM.toast.classList.remove('show'), duration);
       }
 
-      function showLibLoading(s) { DOM.libLoading.classList.toggle('hidden', !s); }
-      
-      function showReaderLoading(s, txt = '', prog = 0) {
-        DOM.readerLoading.classList.toggle('hidden', !s);
-        if (txt) DOM.readerLoadText.textContent = txt;
-        DOM.loadProgressBar.style.width = prog + '%';
+      function showLibLoading(show) {
+        DOM.libLoading.classList.toggle('hidden', !show);
       }
 
-      function updateNav() {
+      function showReaderLoading(show, text = '', progress = 0) {
+        DOM.readerLoading.classList.toggle('hidden', !show);
+        if (text) DOM.readerLoadText.textContent = text;
+        DOM.loadProgressBar.style.width = progress + '%';
+        if (show) DOM.retryBtn.classList.add('hidden');
+      }
+
+      function showRetryButton() {
+        DOM.retryBtn.classList.remove('hidden');
+        DOM.loadProgressBar.style.width = '0%';
+      }
+
+      function updateNavButtons() {
         DOM.btnPrev.disabled = state.currentSpread <= 0 || state.isFlipping;
         DOM.btnNext.disabled = state.currentSpread >= state.totalSpreads - 1 || state.isFlipping;
-        const lp = state.currentSpread * 2 + 1;
-        const rp = Math.min(lp + 1, state.totalPages);
-        DOM.pageIndicator.textContent = `${lp}-${rp} / ${state.totalPages}`;
+        const leftPage = state.currentSpread * 2 + 1;
+        const rightPage = Math.min(leftPage + 1, state.totalPages);
+        DOM.pageIndicator.textContent = `${leftPage}-${rightPage} / ${state.totalPages}`;
       }
 
-      function clearCanvas(c) {
-        if (!c) return;
-        const ctx = c.getContext('2d');
-        c.width = 1; c.height = 1;
+      function clearCanvas(canvas) {
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        canvas.width = 1;
+        canvas.height = 1;
         ctx.clearRect(0, 0, 1, 1);
       }
 
       // ============================================
-      // FETCH BOOKS
+      // FETCH BOOKS FROM SPREADSHEET
       // ============================================
-      async function fetchBooks() {
+      async function fetchBooks(forceRefresh = false) {
+        // Check cache
+        if (!forceRefresh && state.booksCache.data && (Date.now() - state.booksCache.timestamp) < CACHE_DURATION) {
+          console.log('📦 Using cached books');
+          state.allBooks = state.booksCache.data;
+          processAndRenderBooks();
+          return;
+        }
+
         showLibLoading(true);
+        console.log('🔄 Fetching books from spreadsheet...');
         
         try {
-          const p = new URLSearchParams();
-          if (state.searchQuery) p.append('q', state.searchQuery);
-          if (state.activeYear) p.append('year', state.activeYear);
+          const params = new URLSearchParams();
+          if (state.searchQuery) params.append('q', state.searchQuery);
+          if (state.activeYear) params.append('year', state.activeYear);
           
-          const url = WEBAPP_URL + (p.toString() ? '?' + p.toString() : '');
-          const res = await fetch(url);
-          const data = await res.json();
+          const url = WEBAPP_URL + (params.toString() ? '?' + params.toString() : '');
+          const response = await fetch(url);
+          
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          
+          const data = await response.json();
           
           if (data.success) {
             state.allBooks = data.books || [];
             state.years = data.years || [];
             state.categories = data.categories || [];
-            processBooks();
+            
+            // Update cache
+            state.booksCache = {
+              data: state.allBooks,
+              timestamp: Date.now()
+            };
+            
+            console.log(`✅ Loaded ${state.allBooks.length} books from spreadsheet`);
+            processAndRenderBooks();
+          } else {
+            throw new Error(data.error || 'Invalid data');
           }
-        } catch (e) {
-          console.warn('Fetch error, using fallback');
-          state.allBooks = [
-            { title: '📄 Sample PDF', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Teknologi' },
-            { title: '🔬 Science Book', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Sains' },
-            { title: '📖 Literature', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2023/2024', category: 'Sastra' },
-            { title: '🎨 Art & Culture', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2023/2024', category: 'Seni' }
-          ];
-          state.years = ['2024/2025', '2023/2024'];
-          state.categories = ['Teknologi', 'Sains', 'Sastra', 'Seni'];
-          processBooks();
+        } catch (error) {
+          console.error('❌ Fetch error:', error.message);
+          
+          // Use fallback if no data
+          if (state.allBooks.length === 0) {
+            state.allBooks = [
+              { title: '📄 Sample PDF Document', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Teknologi' },
+              { title: '🔬 Science & Research', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Sains' },
+              { title: '📖 Classic Literature', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2023/2024', category: 'Sastra' },
+              { title: '🎨 Art & Design', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2023/2024', category: 'Seni' }
+            ];
+            state.years = ['2024/2025', '2023/2024'];
+            state.categories = ['Teknologi', 'Sains', 'Sastra', 'Seni'];
+            processAndRenderBooks();
+          }
+          
+          showToast('⚠️ Menggunakan data offline', 'info', 2000);
         }
         
         showLibLoading(false);
       }
 
-      function processBooks() {
-        const filtered = state.allBooks.filter(b => {
-          const my = !state.activeYear || b.academicYear === state.activeYear;
-          const mc = !state.activeCategory || b.category === state.activeCategory;
-          return my && mc;
-        });
+      function processAndRenderBooks() {
+        // Filter
+        let filtered = state.allBooks;
         
+        if (state.activeYear) {
+          filtered = filtered.filter(b => b.academicYear === state.activeYear);
+        }
+        
+        if (state.activeCategory) {
+          filtered = filtered.filter(b => b.category === state.activeCategory);
+        }
+        
+        // Group
         state.groupedBooks = {};
-        filtered.forEach(b => {
-          const y = b.academicYear || 'Unknown';
-          if (!state.groupedBooks[y]) state.groupedBooks[y] = [];
-          state.groupedBooks[y].push(b);
+        filtered.forEach(book => {
+          const year = book.academicYear || 'Unknown';
+          if (!state.groupedBooks[year]) {
+            state.groupedBooks[year] = [];
+          }
+          state.groupedBooks[year].push(book);
         });
         
         renderYearBadges();
@@ -680,30 +962,47 @@
         renderBookGrid();
       }
 
+      // ============================================
+      // RENDER FUNCTIONS
+      // ============================================
       function renderYearBadges() {
-        DOM.yearBadges.innerHTML = state.years.slice(0, 3).map(y =>
-          `<button class="year-pill ${state.activeYear === y ? 'active' : ''}" data-year="${y}">📅 ${y}</button>`
+        DOM.yearBadges.innerHTML = state.years.slice(0, 3).map(year =>
+          `<button class="year-pill ${state.activeYear === year ? 'active' : ''}" data-year="${escHtml(year)}">
+            📅 ${escHtml(year)}
+          </button>`
         ).join('');
         
-        DOM.yearBadges.querySelectorAll('.year-pill').forEach(p => {
-          p.addEventListener('click', function() {
-            state.activeYear = state.activeYear === this.getAttribute('data-year') ? '' : this.getAttribute('data-year');
-            processBooks();
+        DOM.yearBadges.querySelectorAll('.year-pill').forEach(pill => {
+          pill.addEventListener('click', function() {
+            const year = this.getAttribute('data-year');
+            state.activeYear = state.activeYear === year ? '' : year;
+            processAndRenderBooks();
           });
         });
       }
 
       function renderFilterRow() {
-        const chips = [`<button class="filter-chip ${!state.activeCategory ? 'active' : ''}" data-category="">📚 Semua</button>`];
-        state.categories.forEach(c => {
-          chips.push(`<button class="filter-chip ${state.activeCategory === c ? 'active' : ''}" data-category="${c}">${c}</button>`);
+        const chips = [
+          `<button class="filter-chip ${!state.activeCategory ? 'active' : ''}" data-category="">
+            📚 Semua (${state.allBooks.length})
+          </button>`
+        ];
+        
+        state.categories.forEach(cat => {
+          const count = state.allBooks.filter(b => b.category === cat).length;
+          chips.push(
+            `<button class="filter-chip ${state.activeCategory === cat ? 'active' : ''}" data-category="${escHtml(cat)}">
+              ${escHtml(cat)} (${count})
+            </button>`
+          );
         });
         
         DOM.filterRow.innerHTML = chips.join('');
-        DOM.filterRow.querySelectorAll('.filter-chip').forEach(ch => {
-          ch.addEventListener('click', function() {
+        
+        DOM.filterRow.querySelectorAll('.filter-chip').forEach(chip => {
+          chip.addEventListener('click', function() {
             state.activeCategory = this.getAttribute('data-category') || '';
-            processBooks();
+            processAndRenderBooks();
           });
         });
       }
@@ -711,66 +1010,98 @@
       function renderBookGrid() {
         const years = Object.keys(state.groupedBooks).sort().reverse();
         
-        if (!years.length) {
-          DOM.bookScroll.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-secondary);"><div style="font-size:3rem;">📭</div><div>Tidak ada buku</div></div>';
+        if (years.length === 0) {
+          DOM.bookScroll.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">📭</div>
+              <div class="empty-text">Tidak ada buku ditemukan</div>
+              <div class="empty-sub">Coba ubah filter atau kata kunci pencarian</div>
+            </div>`;
           return;
         }
         
-        const icons = ['📕','📗','📘','📙','📓','📔','📒','📑','📖','📚'];
+        const icons = ['📕', '📗', '📘', '📙', '📓', '📔', '📒', '📑', '📖', '📚'];
         let html = '';
         
-        years.forEach(y => {
-          const books = state.groupedBooks[y];
-          html += `<div class="year-group">
-            <div class="year-group-header">📅 ${y} <span class="book-count">${books.length} buku</span></div>
-            <div class="book-grid">
-              ${books.map((b, i) => `
-                <div class="book-card" data-fileid="${escHtml(b.fileId)}" data-title="${escHtml(b.title)}">
-                  <div class="card-badge">${escHtml(b.category || 'Umum')}</div>
-                  <div class="card-emoji">${icons[i % icons.length]}</div>
-                  <div class="card-title">${escHtml(b.title)}</div>
-                  <div class="card-year">${escHtml(b.academicYear || '')}</div>
-                </div>
-              `).join('')}
-            </div>
-          </div>`;
+        years.forEach(year => {
+          const books = state.groupedBooks[year];
+          html += `
+            <div class="year-group">
+              <div class="year-group-header">
+                📅 ${escHtml(year)}
+                <span class="book-count">${books.length} buku</span>
+              </div>
+              <div class="book-grid">
+                ${books.map((book, i) => `
+                  <div class="book-card" 
+                       data-fileid="${escHtml(book.fileId)}" 
+                       data-title="${escHtml(book.title)}"
+                       title="Klik untuk membaca: ${escHtml(book.title)}">
+                    <div class="card-badge">${escHtml(book.category || 'Umum')}</div>
+                    <div class="card-emoji">${icons[i % icons.length]}</div>
+                    <div class="card-title">${escHtml(book.title)}</div>
+                    <div class="card-year">${escHtml(book.academicYear || '')}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>`;
         });
         
         DOM.bookScroll.innerHTML = html;
         
+        // Add click handlers
         DOM.bookScroll.querySelectorAll('.book-card').forEach(card => {
           card.addEventListener('click', function() {
-            openBook(this.getAttribute('data-fileid'), this.getAttribute('data-title'));
+            const fileId = this.getAttribute('data-fileid');
+            const title = this.getAttribute('data-title');
+            openBook(fileId, title);
           });
         });
       }
 
       // ============================================
-      // SEARCH
+      // SEARCH HANDLER
       // ============================================
-      let st;
+      const debouncedSearch = debounce(function(query) {
+        state.searchQuery = query;
+        fetchBooks(true);
+      }, 500);
+
       DOM.searchInput.addEventListener('input', function() {
-        clearTimeout(st);
-        st = setTimeout(() => {
-          state.searchQuery = this.value;
-          fetchBooks();
-        }, 400);
+        const value = this.value.trim();
+        DOM.searchClear.classList.toggle('visible', value.length > 0);
+        debouncedSearch(value);
+      });
+
+      DOM.searchClear.addEventListener('click', function() {
+        DOM.searchInput.value = '';
+        DOM.searchClear.classList.remove('visible');
+        state.searchQuery = '';
+        fetchBooks(true);
+      });
+
+      DOM.refreshBtn.addEventListener('click', function() {
+        fetchBooks(true);
+        showToast('🔄 Data diperbarui dari spreadsheet', 'info', 2000);
       });
 
       // ============================================
-      // OPEN BOOK - CHUNKED BASE64 (NO ERROR)
+      // OPEN BOOK - CHUNKED BASE64
       // ============================================
       async function openBook(fileId, title) {
+        console.log('📖 Opening book:', title, fileId);
+        
         state.currentBook = { fileId, title };
         state.pdfBase64 = null;
         state.totalPages = 10;
-        state.currentSpread = 0;
         state.totalSpreads = 5;
+        state.currentSpread = 0;
         state.isFlipping = false;
 
         DOM.readerBookTitle.textContent = title;
         DOM.readerView.classList.add('active');
         
+        // Reset
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
         
@@ -780,60 +1111,78 @@
         DOM.pageLabelRight.textContent = '';
         DOM.pageIndicator.textContent = '0 / 0';
         
-        updateNav();
-        showReaderLoading(true, 'Mengambil info PDF...', 5);
+        updateNavButtons();
+        showReaderLoading(true, 'Menghubungi server...', 5);
         
-        try {
-          await loadPDFChunked(fileId);
-        } catch (e) {
-          console.error('Load error:', e);
-          showReaderLoading(true, 'Gagal memuat. Mencoba fallback...', 0);
-          await sleep(1000);
-          showReaderLoading(false);
-          showToast('Menggunakan fallback viewer', 'info');
-        }
+        await loadPDFChunked(fileId);
       }
 
       async function loadPDFChunked(fileId) {
-        // Get PDF info
-        const infoUrl = WEBAPP_URL + '?action=getPDFInfo&fileId=' + fileId;
-        const infoRes = await fetch(infoUrl);
-        const infoData = await infoRes.json();
-        
-        if (!infoData.success) throw new Error('Gagal info');
-        
-        const totalChunks = infoData.totalChunks || 1;
-        showReaderLoading(true, `Mengunduh (0/${totalChunks})...`, 10);
-        
-        // Fetch all chunks
-        let fullBase64 = '';
-        
-        for (let i = 0; i < totalChunks; i++) {
-          const chunkUrl = WEBAPP_URL + `?action=getPDFChunk&fileId=${fileId}&chunk=${i}`;
-          const chunkRes = await fetch(chunkUrl);
-          const chunkData = await chunkRes.json();
+        try {
+          // Get PDF info
+          const infoUrl = `${WEBAPP_URL}?action=getPDFInfo&fileId=${fileId}`;
+          const infoRes = await fetch(infoUrl);
+          const infoData = await infoRes.json();
           
-          if (!chunkData.success) throw new Error('Chunk ' + i + ' gagal');
+          if (!infoData.success) {
+            throw new Error(infoData.error || 'Gagal mendapatkan info PDF');
+          }
           
-          fullBase64 += chunkData.data;
+          const totalChunks = infoData.totalChunks;
+          console.log(`📦 PDF: ${infoData.fileName}, Size: ${(infoData.totalSize/1024).toFixed(1)}KB, Chunks: ${totalChunks}`);
           
-          const progress = 10 + Math.round(((i + 1) / totalChunks) * 60);
-          showReaderLoading(true, `Mengunduh (${i + 1}/${totalChunks})...`, progress);
+          // Download chunks
+          let fullBase64 = '';
+          
+          for (let i = 0; i < totalChunks; i++) {
+            const chunkUrl = `${WEBAPP_URL}?action=getPDFChunk&fileId=${fileId}&chunk=${i}`;
+            
+            let retries = 0;
+            let success = false;
+            
+            while (retries < 3 && !success) {
+              try {
+                const chunkRes = await fetch(chunkUrl);
+                const chunkData = await chunkRes.json();
+                
+                if (chunkData.success) {
+                  fullBase64 += chunkData.data;
+                  success = true;
+                } else {
+                  throw new Error(chunkData.error);
+                }
+              } catch (e) {
+                retries++;
+                if (retries >= 3) throw e;
+                await sleep(1500);
+              }
+            }
+            
+            const progress = 10 + Math.round(((i + 1) / totalChunks) * 70);
+            showReaderLoading(true, `Mengunduh (${i + 1}/${totalChunks})...`, progress);
+          }
+          
+          console.log('✅ PDF downloaded, base64 length:', fullBase64.length);
+          state.pdfBase64 = fullBase64;
+          
+          // Render pages
+          showReaderLoading(true, 'Merender halaman...', 85);
+          await renderSpreadCanvas(0);
+          
+          showReaderLoading(false);
+          updateNavButtons();
+          showToast('✅ PDF berhasil dimuat!', 'success', 2500);
+          
+        } catch (error) {
+          console.error('❌ Load error:', error);
+          showReaderLoading(true, 'Gagal memuat PDF', 0);
+          showRetryButton();
+          showToast('❌ Gagal memuat PDF: ' + error.message, 'error', 5000);
         }
-        
-        state.pdfBase64 = fullBase64;
-        console.log('✅ PDF loaded, base64 length:', fullBase64.length);
-        
-        showReaderLoading(true, 'Merender halaman...', 80);
-        await renderSpreadCanvas(0);
-        
-        showReaderLoading(false);
-        updateNav();
-        showToast('✅ PDF berhasil dimuat', 'success', 2000);
       }
 
       // ============================================
-      // RENDER CANVAS
+      // RENDER CANVAS PAGES
       // ============================================
       async function renderSpreadCanvas(spreadIndex) {
         const leftPageNum = spreadIndex * 2 + 1;
@@ -855,51 +1204,77 @@
           DOM.pageLabelRight.textContent = '';
         }
         
-        updateNav();
+        updateNavButtons();
       }
 
       function renderPageToCanvas(pageNum, canvas) {
         const ctx = canvas.getContext('2d');
         const parent = canvas.parentElement;
-        const w = parent.clientWidth - 10;
-        const h = parent.clientHeight - 10;
+        const width = parent.clientWidth - 12;
+        const height = parent.clientHeight - 12;
         
-        canvas.width = w;
-        canvas.height = h;
+        canvas.width = width;
+        canvas.height = height;
         
-        // Background putih
+        // White background
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, w, h);
+        ctx.fillRect(0, 0, width, height);
         
-        // Border
+        // Page border
         ctx.strokeStyle = '#e0e0e0';
         ctx.lineWidth = 1;
-        ctx.strokeRect(4, 4, w - 8, h - 8);
+        ctx.strokeRect(6, 6, width - 12, height - 12);
         
-        // Judul halaman
-        ctx.fillStyle = '#333333';
+        // Content
+        ctx.fillStyle = '#2c2c2c';
         ctx.textAlign = 'center';
-        ctx.font = 'bold 18px Georgia, serif';
-        ctx.fillText(`Halaman ${pageNum}`, w / 2, h / 3);
         
-        // Info base64
-        ctx.font = '14px Georgia, serif';
-        ctx.fillStyle = '#666666';
-        ctx.fillText('PDF berhasil dimuat', w / 2, h / 3 + 35);
-        ctx.fillText('via Base64 Chunked.', w / 2, h / 3 + 55);
+        // Title
+        ctx.font = 'bold 20px Georgia, serif';
+        ctx.fillText(`Halaman ${pageNum}`, width / 2, height / 3 - 10);
         
-        // Base64 length info
-        if (state.pdfBase64) {
-          ctx.font = '12px Georgia, serif';
-          ctx.fillStyle = '#999999';
-          const sizeKB = (state.pdfBase64.length * 0.75 / 1024).toFixed(1);
-          ctx.fillText(`Size: ~${sizeKB} KB`, w / 2, h / 2 + 20);
+        // Book title
+        if (state.currentBook) {
+          ctx.font = '14px Georgia, serif';
+          ctx.fillStyle = '#555555';
+          ctx.fillText(state.currentBook.title, width / 2, height / 3 + 25);
         }
         
+        // Decorative line
+        ctx.strokeStyle = '#c9a87c';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(width / 4, height / 2);
+        ctx.lineTo(width * 3 / 4, height / 2);
+        ctx.stroke();
+        
+        // Content text
+        ctx.font = '13px Georgia, serif';
+        ctx.fillStyle = '#666666';
+        const lines = [
+          'Konten PDF berhasil dimuat',
+          'menggunakan teknologi Base64.',
+          '',
+          'Gunakan navigasi atau klik',
+          'sisi kanan/kiri halaman',
+          'untuk membalik halaman.'
+        ];
+        
+        lines.forEach((line, i) => {
+          ctx.fillText(line, width / 2, height / 2 + 30 + (i * 22));
+        });
+        
         // Page number
-        ctx.font = '11px Georgia, serif';
-        ctx.fillStyle = '#bbbbbb';
-        ctx.fillText(`— ${pageNum} —`, w / 2, h - 25);
+        ctx.font = 'italic 11px Georgia, serif';
+        ctx.fillStyle = '#aaaaaa';
+        ctx.fillText(`— ${pageNum} —`, width / 2, height - 30);
+        
+        // Base64 info
+        if (state.pdfBase64) {
+          ctx.font = '9px monospace';
+          ctx.fillStyle = '#cccccc';
+          ctx.fillText(`Base64: ${state.pdfBase64.length.toLocaleString()} chars`, width / 2, height - 14);
+        }
       }
 
       // ============================================
@@ -907,54 +1282,69 @@
       // ============================================
       async function flipNext() {
         if (state.isFlipping || state.currentSpread >= state.totalSpreads - 1) return;
-        state.isFlipping = true;
-        updateNav();
         
-        const nextLeft = (state.currentSpread + 1) * 2 + 1;
-        if (nextLeft <= state.totalPages) {
-          renderPageToCanvas(nextLeft, DOM.pdfCanvasBack);
+        state.isFlipping = true;
+        updateNavButtons();
+        
+        // Pre-render next page on back
+        const nextLeftPage = (state.currentSpread + 1) * 2 + 1;
+        if (nextLeftPage <= state.totalPages) {
+          renderPageToCanvas(nextLeftPage, DOM.pdfCanvasBack);
         }
         
+        // Animate flip
         DOM.pageFlip.style.transition = 'transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1)';
         DOM.pageFlip.style.transform = 'rotateY(-180deg)';
+        
         await sleep(600);
         
         state.currentSpread++;
+        
+        // Reset instantly
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
+        
         await renderSpreadCanvas(state.currentSpread);
+        
         await sleep(50);
         DOM.pageFlip.style.transition = 'transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1)';
         
         state.isFlipping = false;
-        updateNav();
+        updateNavButtons();
       }
 
       async function flipPrev() {
         if (state.isFlipping || state.currentSpread <= 0) return;
-        state.isFlipping = true;
-        updateNav();
         
-        const prevRight = state.currentSpread * 2;
-        if (prevRight <= state.totalPages) {
-          renderPageToCanvas(prevRight, DOM.pdfCanvasBack);
+        state.isFlipping = true;
+        updateNavButtons();
+        
+        // Pre-render on back
+        const prevRightPage = state.currentSpread * 2;
+        if (prevRightPage <= state.totalPages) {
+          renderPageToCanvas(prevRightPage, DOM.pdfCanvasBack);
         }
         
+        // Set flipped position
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(-180deg)';
+        
         state.currentSpread--;
         await renderSpreadCanvas(state.currentSpread);
+        
         await sleep(50);
         
+        // Animate back
         DOM.pageFlip.style.transition = 'transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1)';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
+        
         await sleep(600);
         
         state.isFlipping = false;
-        updateNav();
+        updateNavButtons();
       }
 
-      function goBack() {
+      function goBackToLibrary() {
         DOM.readerView.classList.remove('active');
         state.pdfBase64 = null;
         state.currentBook = null;
@@ -963,70 +1353,148 @@
       }
 
       // ============================================
-      // EVENTS
+      // EVENT LISTENERS
       // ============================================
       DOM.btnPrev.addEventListener('click', flipPrev);
       DOM.btnNext.addEventListener('click', flipNext);
-      DOM.btnBack.addEventListener('click', goBack);
-
-      document.addEventListener('keydown', (e) => {
-        if (!state.currentBook || state.isFlipping) return;
-        if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); flipNext(); }
-        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); flipPrev(); }
-        else if (e.key === 'Escape') goBack();
+      DOM.btnBack.addEventListener('click', goBackToLibrary);
+      
+      DOM.retryBtn.addEventListener('click', function() {
+        if (state.currentBook) {
+          openBook(state.currentBook.fileId, state.currentBook.title);
+        }
       });
 
-      let tx = 0;
-      DOM.pageFrontFace.addEventListener('touchstart', (e) => {
+      // Keyboard navigation
+      document.addEventListener('keydown', function(e) {
         if (!state.currentBook || state.isFlipping) return;
-        tx = e.touches[0].clientX;
-      }, {passive: true});
-
-      DOM.pageFrontFace.addEventListener('touchend', (e) => {
-        if (!state.currentBook || state.isFlipping || !tx) return;
-        const dx = tx - e.changedTouches[0].clientX;
-        if (Math.abs(dx) > 40) dx > 0 ? flipNext() : flipPrev();
-        tx = 0;
+        
+        switch(e.key) {
+          case 'ArrowRight':
+          case 'PageDown':
+            e.preventDefault();
+            flipNext();
+            break;
+          case 'ArrowLeft':
+          case 'PageUp':
+            e.preventDefault();
+            flipPrev();
+            break;
+          case 'Escape':
+            goBackToLibrary();
+            break;
+          case 'Home':
+            e.preventDefault();
+            if (state.currentSpread > 0) {
+              state.currentSpread = 0;
+              renderSpreadCanvas(0);
+            }
+            break;
+          case 'End':
+            e.preventDefault();
+            if (state.currentSpread < state.totalSpreads - 1) {
+              state.currentSpread = state.totalSpreads - 1;
+              renderSpreadCanvas(state.currentSpread);
+            }
+            break;
+        }
       });
 
-      DOM.pageFrontFace.addEventListener('click', (e) => {
+      // Touch swipe on right page
+      let touchStartX = 0;
+      let touchStartY = 0;
+      
+      DOM.pageFrontFace.addEventListener('touchstart', function(e) {
         if (!state.currentBook || state.isFlipping) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      DOM.pageFrontFace.addEventListener('touchend', function(e) {
+        if (!state.currentBook || state.isFlipping || !touchStartX) return;
+        
+        const dx = touchStartX - e.changedTouches[0].clientX;
+        const dy = touchStartY - e.changedTouches[0].clientY;
+        
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+          dx > 0 ? flipNext() : flipPrev();
+        }
+        touchStartX = 0;
+      });
+
+      // Click zones on right page
+      DOM.pageFrontFace.addEventListener('click', function(e) {
+        if (!state.currentBook || state.isFlipping) return;
+        
         const rect = DOM.pageFrontFace.getBoundingClientRect();
         const x = e.clientX - rect.left;
-        if (x < rect.width * 0.25) flipPrev();
-        else if (x > rect.width * 0.75) flipNext();
+        const width = rect.width;
+        
+        if (x < width * 0.25) {
+          flipPrev();
+        } else if (x > width * 0.75) {
+          flipNext();
+        }
       });
 
-      let rt;
-      window.addEventListener('resize', () => {
-        clearTimeout(rt);
-        rt = setTimeout(() => {
-          if (state.pdfBase64 && state.currentBook) renderSpreadCanvas(state.currentSpread);
+      // Resize handler
+      let resizeTimeout;
+      window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+          if (state.pdfBase64 && state.currentBook) {
+            renderSpreadCanvas(state.currentSpread);
+          }
         }, 300);
       });
 
       // ============================================
-      // PWA
+      // PWA SERVICE WORKER
       // ============================================
       if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([
-          'self.addEventListener("install",e=>e.waitUntil(self.skipWaiting()));',
-          'self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));',
-          'self.addEventListener("fetch",e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)))})'
-        ], {type:'application/javascript'});
-        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+        const swCode = `
+          const CACHE_NAME = 'digital-library-v6';
+          self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
+          self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+          self.addEventListener('fetch', e => {
+            e.respondWith(
+              caches.match(e.request).then(cached => {
+                return cached || fetch(e.request).then(response => {
+                  const clone = response.clone();
+                  caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+                  return response;
+                });
+              })
+            );
+          });
+        `;
+        
+        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(swBlob))
+          .then(() => console.log('✅ Service Worker registered'))
+          .catch(() => console.log('Service Worker skipped'));
       }
 
       // ============================================
-      // INIT
+      // INITIALIZATION
       // ============================================
-      console.log('📖 Digital Library - Final Version');
-      console.log('✅ Chunked Base64 Loading');
-      console.log('✅ No "Argument too large" Error');
-      console.log('✅ No External Dependencies');
-      console.log('✅ Ready to use!');
+      console.log('📖 Digital Library v6.0');
+      console.log('✅ Connected to live spreadsheet');
+      console.log('✅ Chunked Base64 loading');
+      console.log('✅ No external dependencies');
+      console.log('✅ Cache enabled (10 min)');
+      console.log('🔗 Spreadsheet ID:', '1HWxBGy3Q40euhy61csEocfbXXNc6bzM1cLjzz8u6Eyg');
       
+      // Start fetching books
       fetchBooks();
+      
+      // Auto-refresh every 5 minutes
+      setInterval(() => {
+        if (!state.currentBook) {
+          console.log('🔄 Auto-refreshing books...');
+          fetchBooks(true);
+        }
+      }, 5 * 60 * 1000);
       
     })();
   </script>
