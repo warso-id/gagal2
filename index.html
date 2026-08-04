@@ -6,11 +6,15 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0a0a0a">
-  <meta name="description" content="E-Book Digital Library - Flip Book Reader">
+  <meta name="description" content="Digital Library - E-Book Flip Reader with Base64 Support">
   <title>📖 Digital Library | E-Book Flip Reader</title>
   
   <link rel="icon" href="https://i.imgur.com/JkxRYd6.png">
   <link rel="apple-touch-icon" href="https://i.imgur.com/JkxRYd6.png">
+  
+  <!-- PDF.js dari jsDelivr (lebih reliable) -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js">
+  </script>
   
   <style>
     :root {
@@ -19,13 +23,17 @@
       --text: #e0d5c5;
       --text-secondary: #8a7a6a;
       --accent: #c9a87c;
+      --accent-hover: #d4b896;
       --page-color: #fdf8f2;
+      --danger: #e74c3c;
+      --success: #27ae60;
+      --warning: #f39c12;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Georgia', 'Segoe UI', system-ui, serif;
+      font-family: 'Georgia', 'Segoe UI', system-ui, -apple-system, sans-serif;
       background: var(--bg);
       width: 100vw;
       height: 100vh;
@@ -37,206 +45,301 @@
       touch-action: pan-y;
     }
 
-    .app { width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; }
+    .app { width: 100%; height: 100%; display: flex; flex-direction: column; }
 
     /* ===== HEADER ===== */
     .app-header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 8px 16px;
-      background: rgba(0,0,0,0.85);
+      gap: 10px;
+      padding: 6px 14px;
+      background: rgba(10,10,10,0.95);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       z-index: 100;
+      flex-shrink: 0;
+      min-height: 48px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       flex-shrink: 0;
     }
 
     .logo {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border-radius: 8px;
       background: url('https://i.imgur.com/JkxRYd6.png') center/contain no-repeat;
-      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(201,168,124,0.3);
     }
 
     .app-title {
       color: var(--text);
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
-      letter-spacing: 1px;
-      flex-shrink: 0;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
     }
 
-    .search-container {
+    .search-wrapper {
       flex: 1;
       position: relative;
-      max-width: 400px;
-      margin: 0 auto;
+      max-width: 350px;
+      margin: 0 10px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      pointer-events: none;
+      z-index: 1;
     }
 
     .search-input {
       width: 100%;
-      padding: 8px 16px 8px 38px;
-      background: rgba(255,255,255,0.06);
+      padding: 7px 14px 7px 34px;
+      background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 20px;
       color: var(--text);
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       outline: none;
-      transition: all 0.3s;
+      transition: all 0.3s ease;
       font-family: inherit;
     }
 
     .search-input:focus {
       border-color: var(--accent);
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.08);
+      box-shadow: 0 0 0 3px rgba(201,168,124,0.08);
     }
 
     .search-input::placeholder { color: var(--text-secondary); }
 
-    .search-icon {
+    .search-clear {
       position: absolute;
-      left: 12px;
+      right: 10px;
       top: 50%;
       transform: translateY(-50%);
       color: var(--text-secondary);
-      font-size: 0.9rem;
-      pointer-events: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      display: none;
+      background: none;
+      border: none;
+      padding: 2px 5px;
     }
 
-    .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .search-clear.visible { display: block; }
 
-    .year-badge {
-      padding: 5px 12px;
-      border-radius: 15px;
-      background: rgba(201,168,124,0.15);
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+
+    .header-actions::-webkit-scrollbar { height: 0; }
+
+    .year-pill {
+      padding: 5px 10px;
+      border-radius: 14px;
+      background: rgba(201,168,124,0.1);
       color: var(--accent);
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       border: 1px solid rgba(201,168,124,0.2);
+      white-space: nowrap;
       font-family: inherit;
     }
 
-    .year-badge:hover { background: rgba(201,168,124,0.25); }
-    .year-badge.active { background: var(--accent); color: #1a1a1a; }
+    .year-pill:hover { background: rgba(201,168,124,0.2); }
+    .year-pill.active { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
 
-    /* ===== MAIN ===== */
-    .main-content { flex: 1; position: relative; overflow: hidden; }
+    .refresh-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text);
+      padding: 5px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
 
+    .refresh-btn:hover { background: rgba(255,255,255,0.12); }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ===== LIBRARY ===== */
     .library-view {
       position: absolute;
       inset: 0;
       display: flex;
       flex-direction: column;
-      transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+      transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
     }
 
-    .library-view.hidden { opacity: 0; transform: scale(0.97); pointer-events: none; }
+    .library-view.hidden {
+      opacity: 0;
+      transform: scale(0.98);
+      pointer-events: none;
+    }
 
-    .filter-bar {
+    .filter-row {
       display: flex;
-      gap: 8px;
-      padding: 10px 16px;
+      gap: 6px;
+      padding: 8px 14px;
       overflow-x: auto;
       flex-shrink: 0;
       -webkit-overflow-scrolling: touch;
     }
 
-    .filter-bar::-webkit-scrollbar { height: 0; }
+    .filter-row::-webkit-scrollbar { height: 0; }
 
     .filter-chip {
-      padding: 6px 14px;
-      border-radius: 18px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
+      padding: 5px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
       color: var(--text-secondary);
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       white-space: nowrap;
       cursor: pointer;
       transition: all 0.2s;
       font-family: inherit;
     }
 
-    .filter-chip:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+    .filter-chip:hover { background: rgba(255,255,255,0.08); color: var(--text); }
     .filter-chip.active { background: var(--accent); color: #1a1a1a; border-color: var(--accent); font-weight: 600; }
 
-    .book-grid-container {
+    .book-scroll {
       flex: 1;
       overflow-y: auto;
-      padding: 0 16px 16px;
+      padding: 0 14px 14px;
+      scroll-behavior: smooth;
     }
 
-    .book-grid-container::-webkit-scrollbar { width: 4px; }
-    .book-grid-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+    .book-scroll::-webkit-scrollbar { width: 4px; }
+    .book-scroll::-webkit-scrollbar-track { background: transparent; }
+    .book-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
 
-    .year-section { margin-bottom: 20px; }
+    .year-group { margin-bottom: 18px; }
 
-    .year-title {
+    .year-group-header {
       color: var(--accent);
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 700;
-      letter-spacing: 2px;
-      padding: 12px 4px 8px;
+      letter-spacing: 1.5px;
+      padding: 10px 2px 6px;
       text-transform: uppercase;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: rgba(10,10,10,0.9);
+      backdrop-filter: blur(10px);
+      z-index: 5;
     }
 
-    .year-title .count { font-size: 0.7rem; color: var(--text-secondary); font-weight: 400; }
+    .year-group-header .book-count {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
 
     .book-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 8px;
     }
 
     .book-card {
       background: var(--surface);
-      border-radius: 10px;
-      padding: 14px 10px;
+      border-radius: 8px;
+      padding: 12px 8px;
       cursor: pointer;
-      transition: all 0.25s;
+      transition: all 0.2s ease;
       text-align: center;
       position: relative;
       overflow: hidden;
+      border: 1px solid transparent;
     }
 
-    .book-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.4); background: #1a1a1a; }
-    .book-card:active { transform: scale(0.96); }
-    .book-card .card-icon { font-size: 1.8rem; margin-bottom: 6px; }
+    .book-card:hover {
+      border-color: rgba(201,168,124,0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+
+    .book-card:active { transform: scale(0.97); }
+
+    .book-card .card-emoji {
+      font-size: 1.6rem;
+      margin-bottom: 5px;
+      transition: transform 0.2s;
+    }
+
+    .book-card:hover .card-emoji { transform: scale(1.1); }
 
     .book-card .card-title {
       color: var(--text);
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
       line-height: 1.3;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      margin-bottom: 3px;
     }
 
-    .book-card .card-meta { color: var(--text-secondary); font-size: 0.6rem; margin-top: 4px; }
+    .book-card .card-year {
+      color: var(--text-secondary);
+      font-size: 0.6rem;
+    }
 
-    .book-card .card-category {
+    .book-card .card-badge {
       position: absolute;
-      top: 8px;
-      right: 8px;
-      font-size: 0.55rem;
+      top: 6px;
+      right: 6px;
+      font-size: 0.5rem;
       background: rgba(201,168,124,0.2);
       color: var(--accent);
-      padding: 2px 8px;
-      border-radius: 10px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-weight: 600;
     }
 
-    .no-results { grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary); }
+    .empty-state {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state .empty-icon { font-size: 4rem; margin-bottom: 12px; }
+    .empty-state .empty-text { font-size: 0.9rem; }
+    .empty-state .empty-sub { font-size: 0.7rem; margin-top: 4px; }
 
     /* ===== READER ===== */
     .reader-view {
@@ -246,7 +349,7 @@
       display: flex;
       flex-direction: column;
       transform: translateX(105%);
-      transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
+      transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
       z-index: 50;
     }
 
@@ -255,64 +358,76 @@
     .reader-topbar {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
+      gap: 8px;
+      padding: 6px 10px;
       background: rgba(0,0,0,0.9);
       backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       z-index: 60;
       flex-shrink: 0;
+      min-height: 40px;
     }
 
     .btn-back {
-      background: rgba(255,255,255,0.08);
-      border: none;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
       color: var(--text);
-      padding: 7px 14px;
-      border-radius: 18px;
+      padding: 5px 10px;
+      border-radius: 14px;
       cursor: pointer;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       transition: all 0.2s;
       font-family: inherit;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
+      white-space: nowrap;
     }
 
-    .btn-back:hover { background: rgba(255,255,255,0.15); }
+    .btn-back:hover { background: rgba(255,255,255,0.12); }
 
-    .reader-book-title {
+    .reader-title {
       flex: 1;
       color: var(--text);
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       text-align: center;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .reader-logo {
-      width: 28px;
-      height: 28px;
+    .reader-logo-sm {
+      width: 24px;
+      height: 24px;
       background: url('https://i.imgur.com/JkxRYd6.png') center/contain no-repeat;
-      border-radius: 6px;
+      border-radius: 5px;
       flex-shrink: 0;
+      opacity: 0.8;
     }
 
+    /* Book Area */
     .book-area {
       flex: 1;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      perspective: 2500px;
+      perspective: 2000px;
       overflow: hidden;
       background: #0a0a0a;
     }
 
-    .book-spread { width: 100%; height: 100%; display: flex; position: relative; }
+    .book-spread {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      position: relative;
+    }
 
-    .page-left-container { width: 50%; height: 100%; position: relative; }
-    .page-left {
+    /* LEFT PAGE */
+    .page-left-wrap { width: 50%; height: 100%; position: relative; }
+
+    .page-left-inner {
       position: absolute;
       inset: 0;
       background: var(--page-color);
@@ -321,7 +436,7 @@
       overflow: hidden;
     }
 
-    .pdf-view-left {
+    .pdf-area-left {
       flex: 1;
       display: flex;
       align-items: center;
@@ -333,21 +448,22 @@
     .pdf-canvas-left {
       max-width: 100%;
       max-height: 100%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
     }
 
-    .page-right-container { width: 50%; height: 100%; position: relative; perspective: 2000px; }
+    /* RIGHT PAGE - Flippable */
+    .page-right-wrap { width: 50%; height: 100%; position: relative; perspective: 1500px; }
 
-    .page-right-flip {
+    .page-flip {
       position: absolute;
       inset: 0;
       transform-style: preserve-3d;
-      transition: transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
+      transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
       z-index: 10;
       transform-origin: left center;
     }
 
-    .page-right-back {
+    .page-back-face {
       position: absolute;
       inset: 0;
       background: #e8dcc8;
@@ -360,7 +476,7 @@
       padding: 5px;
     }
 
-    .page-right-front {
+    .page-front-face {
       position: absolute;
       inset: 0;
       background: var(--page-color);
@@ -371,7 +487,7 @@
       overflow: hidden;
     }
 
-    .pdf-view-right {
+    .pdf-area-right {
       flex: 1;
       display: flex;
       align-items: center;
@@ -383,27 +499,35 @@
     .pdf-canvas-right, .pdf-canvas-back {
       max-width: 100%;
       max-height: 100%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
     }
 
-    .page-num { text-align: center; padding: 4px; font-size: 0.6rem; color: #aaa; flex-shrink: 0; }
+    .page-label {
+      text-align: center;
+      padding: 3px;
+      font-size: 0.55rem;
+      color: #aaa;
+      flex-shrink: 0;
+      background: rgba(0,0,0,0.02);
+    }
 
-    .spine {
+    .spine-line {
       position: absolute;
       left: 50%;
       top: 0;
       bottom: 0;
-      width: 2px;
-      background: linear-gradient(to right, rgba(0,0,0,0.3), rgba(0,0,0,0.5), rgba(0,0,0,0.2));
+      width: 1px;
+      background: rgba(0,0,0,0.2);
       transform: translateX(-50%);
       z-index: 30;
       pointer-events: none;
     }
 
-    .loading-overlay {
+    /* Loading Overlay */
+    .load-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.95);
+      background: rgba(0,0,0,0.93);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -412,40 +536,64 @@
       transition: opacity 0.3s;
     }
 
-    .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+    .load-overlay.hidden { opacity: 0; pointer-events: none; }
 
-    .loader {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255,255,255,0.1);
+    .spinner-ring {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(255,255,255,0.08);
       border-top: 3px solid var(--accent);
+      border-right: 3px solid var(--accent);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.7s linear infinite;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .loading-text { color: var(--text-secondary); margin-top: 12px; font-size: 0.78rem; letter-spacing: 1px; }
+    .load-text {
+      color: var(--text-secondary);
+      margin-top: 10px;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
 
+    .load-progress {
+      width: 200px;
+      height: 3px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .load-progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    /* Bottom Bar */
     .reader-bottombar {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 16px;
-      padding: 10px 20px;
+      gap: 14px;
+      padding: 8px 16px;
       background: rgba(0,0,0,0.9);
       flex-shrink: 0;
       z-index: 60;
     }
 
     .nav-btn {
-      width: 42px;
-      height: 42px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.03);
       color: var(--text);
-      font-size: 1.1rem;
+      font-size: 1rem;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
@@ -455,85 +603,119 @@
 
     .nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: var(--accent); }
     .nav-btn:active:not(:disabled) { transform: scale(0.9); }
-    .nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+    .nav-btn:disabled { opacity: 0.15; cursor: not-allowed; }
 
     .page-indicator {
       color: var(--text);
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 600;
-      min-width: 100px;
+      min-width: 90px;
       text-align: center;
-      background: rgba(255,255,255,0.04);
-      padding: 6px 16px;
-      border-radius: 16px;
-      letter-spacing: 1px;
+      background: rgba(255,255,255,0.03);
+      padding: 5px 12px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
     }
 
-    /* Error toast */
-    .error-toast {
+    /* Toast Notification */
+    .toast {
       position: fixed;
-      bottom: 20px;
+      top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: #c0392b;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 25px;
-      font-size: 0.85rem;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.8rem;
       z-index: 200;
       display: none;
-      animation: fadeInUp 0.3s;
+      animation: slideDown 0.3s ease;
+      font-weight: 600;
+      letter-spacing: 0.5px;
     }
 
-    .error-toast.show { display: block; }
+    .toast.show { display: block; }
+    .toast.error { background: #e74c3c; color: white; }
+    .toast.success { background: #27ae60; color: white; }
+    .toast.info { background: #3498db; color: white; }
 
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
       to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 
+    /* Retry Button */
+    .retry-btn {
+      background: var(--accent);
+      color: #1a1a1a;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.8rem;
+      margin-top: 12px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .retry-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+
+    /* Responsive */
     @media (max-width: 768px) {
-      .app-header { padding: 6px 10px; gap: 8px; }
-      .app-title { font-size: 0.85rem; }
-      .search-input { font-size: 0.75rem; padding: 6px 12px 6px 32px; }
-      .book-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
-      .book-card { padding: 12px 8px; }
-      .book-card .card-icon { font-size: 1.5rem; }
-      .book-card .card-title { font-size: 0.7rem; }
-      .reader-topbar { padding: 5px 8px; }
-      .reader-bottombar { padding: 8px 12px; gap: 10px; }
-      .nav-btn { width: 36px; height: 36px; font-size: 0.95rem; }
+      .app-header { padding: 5px 8px; gap: 6px; }
+      .logo { width: 28px; height: 28px; }
+      .app-title { font-size: 0.8rem; }
+      .search-wrapper { max-width: 200px; }
+      .search-input { font-size: 0.72rem; padding: 5px 10px 5px 28px; }
+
+      .book-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+      .book-card { padding: 10px 6px; }
+      .book-card .card-emoji { font-size: 1.4rem; }
+      .book-card .card-title { font-size: 0.68rem; }
+
+      .reader-topbar { padding: 4px 6px; }
+      .reader-bottombar { padding: 6px 10px; gap: 10px; }
+      .nav-btn { width: 34px; height: 34px; font-size: 0.9rem; }
+      .page-indicator { font-size: 0.72rem; min-width: 70px; padding: 4px 10px; }
     }
 
     @media (max-width: 480px) {
-      .book-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-      .app-header { flex-wrap: wrap; gap: 6px; }
-      .search-container { order: 3; max-width: 100%; flex-basis: 100%; }
+      .book-grid { grid-template-columns: repeat(2, 1fr); }
+      .app-header { flex-wrap: wrap; }
+      .search-wrapper { order: 10; max-width: 100%; flex-basis: 100%; margin: 4px 0; }
+      .header-actions { order: 5; }
     }
   </style>
 </head>
 <body>
   <div class="app">
     <!-- HEADER -->
-    <div class="app-header" id="appHeader">
-      <div class="logo" title="Digital Library"></div>
-      <div class="app-title">Digital Library</div>
-      <div class="search-container">
-        <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" id="searchInput" placeholder="Cari buku...">
+    <div class="app-header">
+      <div class="logo-container">
+        <div class="logo"></div>
+        <span class="app-title">Digital Library</span>
       </div>
+      
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="searchInput" placeholder="Cari judul, kategori, tahun...">
+        <button class="search-clear" id="searchClear">✕</button>
+      </div>
+      
       <div class="header-actions" id="yearBadges"></div>
+      
+      <button class="refresh-btn" id="refreshBtn" title="Refresh">🔄</button>
     </div>
 
     <!-- MAIN -->
     <div class="main-content">
       <!-- LIBRARY -->
       <div class="library-view" id="libraryView">
-        <div class="filter-bar" id="filterBar"></div>
-        <div class="book-grid-container" id="bookGridContainer">
-          <div class="loading-overlay" id="libLoading">
-            <div class="loader"></div>
-            <div class="loading-text">Memuat koleksi...</div>
+        <div class="filter-row" id="filterRow"></div>
+        <div class="book-scroll" id="bookScroll">
+          <div class="load-overlay" id="libLoading">
+            <div class="spinner-ring"></div>
+            <div class="load-text">Memuat koleksi...</div>
           </div>
         </div>
       </div>
@@ -542,40 +724,48 @@
       <div class="reader-view" id="readerView">
         <div class="reader-topbar">
           <button class="btn-back" id="btnBack">← Kembali</button>
-          <div class="reader-book-title" id="readerBookTitle">Pilih buku</div>
-          <div class="reader-logo"></div>
+          <div class="reader-title" id="readerBookTitle">Pilih buku untuk membaca</div>
+          <div class="reader-logo-sm"></div>
         </div>
 
         <div class="book-area">
           <div class="book-spread">
-            <div class="page-left-container">
-              <div class="page-left">
-                <div class="pdf-view-left" id="pdfViewLeft">
+            <!-- LEFT PAGE -->
+            <div class="page-left-wrap">
+              <div class="page-left-inner">
+                <div class="pdf-area-left" id="pdfAreaLeft">
                   <canvas class="pdf-canvas-left" id="pdfCanvasLeft"></canvas>
                 </div>
-                <div class="page-num" id="pageNumLeft"></div>
+                <div class="page-label" id="pageLabelLeft"></div>
               </div>
             </div>
 
-            <div class="page-right-container">
-              <div class="page-right-flip" id="pageFlip">
-                <div class="page-right-back" id="pageBack">
+            <!-- RIGHT PAGE (FLIPPABLE) -->
+            <div class="page-right-wrap">
+              <div class="page-flip" id="pageFlip">
+                <div class="page-back-face" id="pageBackFace">
                   <canvas class="pdf-canvas-back" id="pdfCanvasBack"></canvas>
                 </div>
-                <div class="page-right-front" id="pageFront">
-                  <div class="pdf-view-right" id="pdfViewRight">
+                <div class="page-front-face" id="pageFrontFace">
+                  <div class="pdf-area-right" id="pdfAreaRight">
                     <canvas class="pdf-canvas-right" id="pdfCanvasRight"></canvas>
                   </div>
-                  <div class="page-num" id="pageNumRight"></div>
+                  <div class="page-label" id="pageLabelRight"></div>
                 </div>
               </div>
             </div>
-            <div class="spine"></div>
+
+            <div class="spine-line"></div>
           </div>
 
-          <div class="loading-overlay" id="readerLoading">
-            <div class="loader"></div>
-            <div class="loading-text" id="readerLoadingText">Membuka PDF...</div>
+          <!-- READER LOADING -->
+          <div class="load-overlay" id="readerLoading">
+            <div class="spinner-ring"></div>
+            <div class="load-text" id="readerLoadText">Membuka PDF...</div>
+            <div class="load-progress">
+              <div class="load-progress-bar" id="loadProgressBar"></div>
+            </div>
+            <button class="retry-btn hidden" id="retryBtn">🔄 Coba Lagi</button>
           </div>
         </div>
 
@@ -588,24 +778,8 @@
     </div>
   </div>
 
-  <div class="error-toast" id="errorToast"></div>
-
-  <!-- PDF.js INLINE (No CDN, No Tracking Issues) -->
-  <script>
-    // PDF.js loaded inline to avoid Tracking Prevention
-    if (typeof pdfjsLib === 'undefined') {
-      // Fallback: Load from alternative source
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
-      script.onerror = function() {
-        // Second fallback
-        const script2 = document.createElement('script');
-        script2.src = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js';
-        document.head.appendChild(script2);
-      };
-      document.head.appendChild(script);
-    }
-  </script>
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
 
   <script>
     (function() {
@@ -615,7 +789,16 @@
       // CONFIG
       // ============================================
       const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwG0iQUK0-2evTzBfjM3pmEVBHDrlzroyJzdk-9ZfrSaA8l7POsziMHSXjSitUWeZrN/exec';
-      
+      const MAX_RETRIES = 3;
+      const CACHE_DURATION = 30 * 60 * 1000; // 30 menit
+
+      // ============================================
+      // PDF.JS SETUP
+      // ============================================
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+      }
+
       // ============================================
       // STATE
       // ============================================
@@ -634,41 +817,49 @@
         activeYear: '',
         activeCategory: '',
         searchQuery: '',
-        pdfBase64: null,
+        retryCount: 0,
+        cache: {
+          books: null,
+          timestamp: 0
+        }
       };
 
       // ============================================
-      // DOM
+      // DOM REFERENCES
       // ============================================
       const $ = (id) => document.getElementById(id);
       
       const DOM = {
         libraryView: $('libraryView'),
-        bookGridContainer: $('bookGridContainer'),
+        bookScroll: $('bookScroll'),
         libLoading: $('libLoading'),
-        filterBar: $('filterBar'),
+        filterRow: $('filterRow'),
         yearBadges: $('yearBadges'),
         searchInput: $('searchInput'),
+        searchClear: $('searchClear'),
+        refreshBtn: $('refreshBtn'),
         readerView: $('readerView'),
         readerLoading: $('readerLoading'),
-        readerLoadingText: $('readerLoadingText'),
+        readerLoadText: $('readerLoadText'),
+        loadProgressBar: $('loadProgressBar'),
+        retryBtn: $('retryBtn'),
         pageFlip: $('pageFlip'),
-        pageFront: $('pageFront'),
+        pageFrontFace: $('pageFrontFace'),
         pdfCanvasLeft: $('pdfCanvasLeft'),
         pdfCanvasRight: $('pdfCanvasRight'),
         pdfCanvasBack: $('pdfCanvasBack'),
-        pageNumLeft: $('pageNumLeft'),
-        pageNumRight: $('pageNumRight'),
+        pageLabelLeft: $('pageLabelLeft'),
+        pageLabelRight: $('pageLabelRight'),
         pageIndicator: $('pageIndicator'),
         readerBookTitle: $('readerBookTitle'),
         btnPrev: $('btnPrev'),
         btnNext: $('btnNext'),
         btnBack: $('btnBack'),
-        errorToast: $('errorToast'),
+        toast: $('toast'),
       };
 
       // ============================================
-      // UTILS
+      // UTILITY FUNCTIONS
       // ============================================
       const sleep = (ms) => new Promise(r => setTimeout(r, ms));
       
@@ -679,19 +870,34 @@
         })[m]);
       };
 
-      function showError(msg, duration = 4000) {
-        DOM.errorToast.textContent = msg;
-        DOM.errorToast.classList.add('show');
-        setTimeout(() => DOM.errorToast.classList.remove('show'), duration);
+      const debounce = (fn, delay) => {
+        let timer;
+        return function(...args) {
+          clearTimeout(timer);
+          timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+      };
+
+      function showToast(msg, type = 'info', duration = 3000) {
+        DOM.toast.textContent = msg;
+        DOM.toast.className = 'toast show ' + type;
+        setTimeout(() => DOM.toast.classList.remove('show'), duration);
       }
 
       function showLibLoading(show) {
         DOM.libLoading.classList.toggle('hidden', !show);
       }
 
-      function showReaderLoading(show, text) {
+      function showReaderLoading(show, text = '', progress = 0) {
         DOM.readerLoading.classList.toggle('hidden', !show);
-        if (text) DOM.readerLoadingText.textContent = text;
+        if (text) DOM.readerLoadText.textContent = text;
+        DOM.loadProgressBar.style.width = progress + '%';
+        DOM.retryBtn.classList.toggle('hidden', true);
+      }
+
+      function showRetryButton() {
+        DOM.retryBtn.classList.remove('hidden');
+        DOM.loadProgressBar.style.width = '0%';
       }
 
       function updateNavButtons() {
@@ -711,123 +917,159 @@
       }
 
       // ============================================
-      // WAIT FOR PDF.JS
+      // FETCH BOOKS WITH CACHE
       // ============================================
-      function waitForPDFJS() {
-        return new Promise((resolve, reject) => {
-          if (typeof pdfjsLib !== 'undefined') {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-            resolve();
-            return;
-          }
-          
-          let attempts = 0;
-          const maxAttempts = 50;
-          const interval = setInterval(() => {
-            attempts++;
-            if (typeof pdfjsLib !== 'undefined') {
-              clearInterval(interval);
-              pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-              resolve();
-            } else if (attempts >= maxAttempts) {
-              clearInterval(interval);
-              reject(new Error('PDF.js gagal dimuat'));
-            }
-          }, 200);
-        });
-      }
+      async function fetchBooks(forceRefresh = false) {
+        // Check cache
+        if (!forceRefresh && state.cache.books && (Date.now() - state.cache.timestamp) < CACHE_DURATION) {
+          console.log('✅ Using cached books');
+          state.allBooks = state.cache.books;
+          processBooks();
+          return;
+        }
 
-      // ============================================
-      // FETCH BOOKS
-      // ============================================
-      async function fetchBooks() {
         showLibLoading(true);
         
         try {
-          const url = WEBAPP_URL + 
-            (state.searchQuery ? '&q=' + encodeURIComponent(state.searchQuery) : '') +
-            (state.activeYear ? '&year=' + encodeURIComponent(state.activeYear) : '');
+          const params = new URLSearchParams();
+          if (state.searchQuery) params.append('q', state.searchQuery);
+          if (state.activeYear) params.append('year', state.activeYear);
+          
+          const url = WEBAPP_URL + (params.toString() ? '?' + params.toString() : '');
+          console.log('Fetching:', url);
           
           const response = await fetch(url);
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          
           const data = await response.json();
           
           if (data.success) {
             state.allBooks = data.books || [];
-            state.groupedBooks = data.grouped || {};
             state.years = data.years || [];
             state.categories = data.categories || [];
-            applyFilters();
-            renderYearBadges();
-            renderFilterBar();
+            
+            // Update cache
+            state.cache.books = state.allBooks;
+            state.cache.timestamp = Date.now();
+            
+            processBooks();
+          } else {
+            throw new Error(data.error || 'Data tidak valid');
           }
         } catch (error) {
           console.error('Fetch error:', error);
-          // Fallback data
-          state.allBooks = [
-            { title: '📄 Sample PDF', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Teknologi' },
-            { title: '🔬 Science Book', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Sains' },
-            { title: '📖 Literature', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2023/2024', category: 'Sastra' },
-          ];
-          state.years = ['2024/2025', '2023/2024'];
-          state.categories = ['Teknologi', 'Sains', 'Sastra'];
-          state.groupedBooks = {
-            '2024/2025': state.allBooks.filter(b => b.academicYear === '2024/2025'),
-            '2023/2024': state.allBooks.filter(b => b.academicYear === '2023/2024')
-          };
-          applyFilters();
-          renderYearBadges();
-          renderFilterBar();
+          
+          // Use fallback data
+          if (state.allBooks.length === 0) {
+            state.allBooks = generateFallbackBooks();
+            state.years = ['2024/2025', '2023/2024'];
+            state.categories = ['Teknologi', 'Sains', 'Sastra', 'Seni'];
+            processBooks();
+          }
+          
+          showToast('Gagal memuat data. Menggunakan data lokal.', 'warning');
         }
         
         showLibLoading(false);
       }
 
-      function applyFilters() {
+      function generateFallbackBooks() {
+        const books = [];
+        const titles = [
+          'Panduan Digital Marketing 2024',
+          'Pengenalan Machine Learning',
+          'Fisika Kuantum Modern',
+          'Sejarah Peradaban Islam',
+          'Buku Panduan Python',
+          'Matematika Diskrit',
+          'Basis Data Lanjutan',
+          'Jaringan Komputer'
+        ];
+        const categories = ['Teknologi', 'Sains', 'Sastra', 'Seni'];
+        const years = ['2024/2025', '2023/2024'];
+        
+        titles.forEach((title, i) => {
+          books.push({
+            title: '📄 ' + title,
+            fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy',
+            academicYear: years[i % 2],
+            category: categories[i % 4]
+          });
+        });
+        
+        return books;
+      }
+
+      function processBooks() {
+        // Group by year
+        state.groupedBooks = {};
+        state.allBooks.forEach(book => {
+          const year = book.academicYear || 'Unknown';
+          if (!state.groupedBooks[year]) {
+            state.groupedBooks[year] = [];
+          }
+          state.groupedBooks[year].push(book);
+        });
+        
+        // Filter by category
         state.books = state.allBooks.filter(book => {
           const matchYear = !state.activeYear || book.academicYear === state.activeYear;
           const matchCategory = !state.activeCategory || book.category === state.activeCategory;
           return matchYear && matchCategory;
         });
         
-        state.groupedBooks = {};
+        // Re-group filtered
+        const grouped = {};
         state.books.forEach(book => {
-          if (!state.groupedBooks[book.academicYear]) {
-            state.groupedBooks[book.academicYear] = [];
-          }
-          state.groupedBooks[book.academicYear].push(book);
+          const year = book.academicYear || 'Unknown';
+          if (!grouped[year]) grouped[year] = [];
+          grouped[year].push(book);
         });
+        state.groupedBooks = grouped;
         
+        renderYearBadges();
+        renderFilterRow();
         renderBookGrid();
       }
 
+      // ============================================
+      // RENDER FUNCTIONS
+      // ============================================
       function renderYearBadges() {
-        DOM.yearBadges.innerHTML = state.years.slice(0, 4).map(year => 
-          `<div class="year-badge ${state.activeYear === year ? 'active' : ''}" data-year="${year}">${year}</div>`
+        DOM.yearBadges.innerHTML = state.years.slice(0, 3).map(year => 
+          `<button class="year-pill ${state.activeYear === year ? 'active' : ''}" data-year="${year}">
+            📅 ${year}
+          </button>`
         ).join('');
         
-        DOM.yearBadges.querySelectorAll('.year-badge').forEach(badge => {
-          badge.addEventListener('click', function() {
+        DOM.yearBadges.querySelectorAll('.year-pill').forEach(pill => {
+          pill.addEventListener('click', function() {
             const year = this.getAttribute('data-year');
             state.activeYear = state.activeYear === year ? '' : year;
-            renderYearBadges();
-            applyFilters();
+            processBooks();
           });
         });
       }
 
-      function renderFilterBar() {
-        const chips = ['<div class="filter-chip ' + (!state.activeCategory ? 'active' : '') + '" data-category="">Semua</div>'];
+      function renderFilterRow() {
+        const chips = [
+          `<button class="filter-chip ${!state.activeCategory ? 'active' : ''}" data-category="">📚 Semua</button>`
+        ];
+        
         state.categories.forEach(cat => {
-          chips.push('<div class="filter-chip ' + (state.activeCategory === cat ? 'active' : '') + '" data-category="' + cat + '">' + cat + '</div>');
+          chips.push(
+            `<button class="filter-chip ${state.activeCategory === cat ? 'active' : ''}" data-category="${cat}">
+              ${cat}
+            </button>`
+          );
         });
         
-        DOM.filterBar.innerHTML = chips.join('');
+        DOM.filterRow.innerHTML = chips.join('');
         
-        DOM.filterBar.querySelectorAll('.filter-chip').forEach(chip => {
+        DOM.filterRow.querySelectorAll('.filter-chip').forEach(chip => {
           chip.addEventListener('click', function() {
             state.activeCategory = this.getAttribute('data-category') || '';
-            renderFilterBar();
-            applyFilters();
+            processBooks();
           });
         });
       }
@@ -836,10 +1078,11 @@
         const years = Object.keys(state.groupedBooks).sort().reverse();
         
         if (years.length === 0) {
-          DOM.bookGridContainer.innerHTML = `
-            <div class="no-results">
-              <div style="font-size:3rem;margin-bottom:10px;">📭</div>
-              <div>Tidak ada buku ditemukan</div>
+          DOM.bookScroll.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">📭</div>
+              <div class="empty-text">Tidak ada buku ditemukan</div>
+              <div class="empty-sub">Coba ubah filter atau kata kunci pencarian</div>
             </div>`;
           return;
         }
@@ -850,24 +1093,28 @@
         years.forEach(year => {
           const books = state.groupedBooks[year];
           html += `
-            <div class="year-section">
-              <div class="year-title">📅 ${year} <span class="count">(${books.length} buku)</span></div>
+            <div class="year-group">
+              <div class="year-group-header">
+                📅 ${year}
+                <span class="book-count">${books.length} buku</span>
+              </div>
               <div class="book-grid">
                 ${books.map((book, i) => `
-                  <div class="book-card" data-fileid="${book.fileId}" data-title="${escHtml(book.title)}">
-                    <div class="card-category">${escHtml(book.category)}</div>
-                    <div class="card-icon">${icons[i % icons.length]}</div>
+                  <div class="book-card" data-fileid="${escHtml(book.fileId)}" data-title="${escHtml(book.title)}">
+                    <div class="card-badge">${escHtml(book.category || 'Umum')}</div>
+                    <div class="card-emoji">${icons[i % icons.length]}</div>
                     <div class="card-title">${escHtml(book.title)}</div>
-                    <div class="card-meta">${book.academicYear}</div>
+                    <div class="card-year">${escHtml(book.academicYear || '')}</div>
                   </div>
                 `).join('')}
               </div>
             </div>`;
         });
         
-        DOM.bookGridContainer.innerHTML = html;
+        DOM.bookScroll.innerHTML = html;
         
-        DOM.bookGridContainer.querySelectorAll('.book-card').forEach(card => {
+        // Event listeners
+        DOM.bookScroll.querySelectorAll('.book-card').forEach(card => {
           card.addEventListener('click', function() {
             const fileId = this.getAttribute('data-fileid');
             const title = this.getAttribute('data-title');
@@ -879,17 +1126,28 @@
       // ============================================
       // SEARCH
       // ============================================
-      let searchTimer;
+      const debouncedSearch = debounce(function(query) {
+        state.searchQuery = query;
+        fetchBooks();
+      }, 400);
+
       DOM.searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => {
-          state.searchQuery = this.value;
-          fetchBooks();
-        }, 300);
+        const val = this.value;
+        DOM.searchClear.classList.toggle('visible', val.length > 0);
+        debouncedSearch(val);
       });
 
+      DOM.searchClear.addEventListener('click', function() {
+        DOM.searchInput.value = '';
+        DOM.searchClear.classList.remove('visible');
+        state.searchQuery = '';
+        fetchBooks();
+      });
+
+      DOM.refreshBtn.addEventListener('click', () => fetchBooks(true));
+
       // ============================================
-      // OPEN BOOK - BASE64
+      // OPEN BOOK - BASE64 WITH RETRY
       // ============================================
       async function openBook(fileId, title) {
         state.currentBook = { fileId, title };
@@ -898,64 +1156,80 @@
         state.currentSpread = 0;
         state.totalSpreads = 0;
         state.isFlipping = false;
-        state.pdfBase64 = null;
+        state.retryCount = 0;
 
         DOM.readerBookTitle.textContent = title;
         DOM.readerView.classList.add('active');
         
+        // Reset flip
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
         
-        clearCanvas(DOM.pdfCanvasLeft);
-        clearCanvas(DOM.pdfCanvasRight);
-        clearCanvas(DOM.pdfCanvasBack);
+        // Clear canvases
+        [DOM.pdfCanvasLeft, DOM.pdfCanvasRight, DOM.pdfCanvasBack].forEach(clearCanvas);
         
-        DOM.pageNumLeft.textContent = '';
-        DOM.pageNumRight.textContent = '';
+        DOM.pageLabelLeft.textContent = '';
+        DOM.pageLabelRight.textContent = '';
         DOM.pageIndicator.textContent = '0 / 0';
         
         updateNavButtons();
-        showReaderLoading(true, 'Mengunduh PDF (Base64)...');
+        showReaderLoading(true, 'Menghubungkan ke server...', 10);
         
+        await loadBookWithRetry(fileId);
+      }
+
+      async function loadBookWithRetry(fileId) {
         try {
-          // Wait for PDF.js
-          await waitForPDFJS();
+          showReaderLoading(true, 'Mengambil data PDF (Base64)...', 20);
           
-          // Get Base64
+          // Get Base64 from Web App
           const base64Url = WEBAPP_URL + '?action=getPDFBase64&fileId=' + fileId;
-          console.log('Fetching Base64 from:', base64Url);
-          
           const response = await fetch(base64Url);
           const data = await response.json();
           
           if (!data.success || !data.base64) {
-            throw new Error(data.error || 'Gagal mendapatkan Base64 PDF');
+            throw new Error(data.error || 'Base64 tidak tersedia');
           }
           
           console.log('✅ Base64 received, length:', data.base64.length);
-          state.pdfBase64 = data.dataUrl;
+          showReaderLoading(true, 'Memproses PDF...', 50);
           
-          showReaderLoading(true, 'Memproses halaman PDF...');
+          // Load PDF from base64
           await loadPDFFromBase64(data.base64);
           
         } catch (error) {
-          console.error('Error loading PDF:', error);
-          showReaderLoading(false);
-          showError('Gagal membuka PDF. Pastikan file dapat diakses dan Apps Script sudah di-deploy.');
+          console.error('Load error:', error);
+          state.retryCount++;
           
-          // Try iframe fallback
-          tryIframeFallback(fileId);
+          if (state.retryCount < MAX_RETRIES) {
+            showReaderLoading(true, `Mencoba ulang (${state.retryCount}/${MAX_RETRIES})...`, 30);
+            await sleep(1000);
+            await loadBookWithRetry(fileId);
+          } else {
+            showReaderLoading(true, 'Gagal memuat PDF', 0);
+            showRetryButton();
+            showToast('Gagal membuka PDF setelah ' + MAX_RETRIES + ' kali percobaan', 'error');
+            
+            // Fallback to iframe
+            useFallbackViewer(fileId);
+          }
         }
       }
 
       async function loadPDFFromBase64(base64Data) {
+        if (typeof pdfjsLib === 'undefined') {
+          throw new Error('PDF.js tidak tersedia');
+        }
+        
         try {
-          // Convert base64 to Uint8Array
-          const binaryString = atob(base64Data);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
+          // Convert base64 to binary
+          const binaryStr = atob(base64Data);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
           }
+          
+          showReaderLoading(true, 'Me-render halaman...', 70);
           
           const loadingTask = pdfjsLib.getDocument({
             data: bytes,
@@ -970,31 +1244,43 @@
           
           console.log('✅ PDF loaded:', state.totalPages, 'pages');
           
+          showReaderLoading(true, 'Merender halaman pertama...', 85);
           await renderSpread(0);
+          
           showReaderLoading(false);
           updateNavButtons();
+          showToast(`✅ ${state.totalPages} halaman berhasil dimuat`, 'success', 2000);
           
         } catch (error) {
-          console.error('Base64 PDF load error:', error);
+          console.error('PDF parse error:', error);
           throw error;
         }
       }
 
-      function tryIframeFallback(fileId) {
-        DOM.pageNumLeft.textContent = '';
-        DOM.pageNumRight.textContent = 'PDF Viewer';
-        DOM.pdfViewLeft.innerHTML = '';
-        DOM.pdfViewRight.innerHTML = 
-          '<iframe src="https://drive.google.com/file/d/' + fileId + '/preview" ' +
-          'style="width:100%;height:100%;border:none;"></iframe>';
+      function useFallbackViewer(fileId) {
+        DOM.pageLabelLeft.textContent = '';
+        DOM.pageLabelRight.textContent = 'PDF Viewer';
+        document.getElementById('pdfAreaLeft').innerHTML = '';
+        document.getElementById('pdfAreaRight').innerHTML = 
+          `<iframe src="https://drive.google.com/file/d/${fileId}/preview" 
+            style="width:100%;height:100%;border:none;"></iframe>`;
         state.totalPages = 1;
         state.totalSpreads = 1;
         state.currentSpread = 0;
         updateNavButtons();
+        showReaderLoading(false);
       }
 
+      // Retry button
+      DOM.retryBtn.addEventListener('click', function() {
+        if (state.currentBook) {
+          state.retryCount = 0;
+          openBook(state.currentBook.fileId, state.currentBook.title);
+        }
+      });
+
       // ============================================
-      // RENDER SPREAD
+      // RENDER PDF PAGES
       // ============================================
       async function renderSpread(spreadIndex) {
         if (!state.pdfDoc) return;
@@ -1002,20 +1288,22 @@
         const leftPageNum = spreadIndex * 2 + 1;
         const rightPageNum = leftPageNum + 1;
         
+        // Left page
         if (leftPageNum <= state.totalPages) {
           await renderPageToCanvas(leftPageNum, DOM.pdfCanvasLeft);
-          DOM.pageNumLeft.textContent = `Hal ${leftPageNum}`;
+          DOM.pageLabelLeft.textContent = `Hal ${leftPageNum}`;
         } else {
           clearCanvas(DOM.pdfCanvasLeft);
-          DOM.pageNumLeft.textContent = '';
+          DOM.pageLabelLeft.textContent = '';
         }
         
+        // Right page
         if (rightPageNum <= state.totalPages) {
           await renderPageToCanvas(rightPageNum, DOM.pdfCanvasRight);
-          DOM.pageNumRight.textContent = `Hal ${rightPageNum}`;
+          DOM.pageLabelRight.textContent = `Hal ${rightPageNum}`;
         } else {
           clearCanvas(DOM.pdfCanvasRight);
-          DOM.pageNumRight.textContent = '';
+          DOM.pageLabelRight.textContent = '';
         }
         
         updateNavButtons();
@@ -1027,8 +1315,8 @@
         try {
           const page = await state.pdfDoc.getPage(pageNum);
           const parent = canvas.parentElement;
-          const containerW = parent.clientWidth - 10;
-          const containerH = parent.clientHeight - 10;
+          const containerW = parent.clientWidth - 12;
+          const containerH = parent.clientHeight - 12;
           
           const vp = page.getViewport({ scale: 1 });
           const scale = Math.min(containerW / vp.width, containerH / vp.height, 3);
@@ -1047,34 +1335,41 @@
           }).promise;
           
         } catch (error) {
-          console.error('Render error:', error);
+          console.error('Render page error:', error);
         }
       }
 
       // ============================================
-      // FLIP
+      // FLIP ANIMATION
       // ============================================
       async function flipNext() {
         if (state.isFlipping || state.currentSpread >= state.totalSpreads - 1) return;
+        
         state.isFlipping = true;
         updateNavButtons();
         
+        // Pre-render next page on back canvas
         const nextLeftPage = (state.currentSpread + 1) * 2 + 1;
         if (nextLeftPage <= state.totalPages) {
           await renderPageToCanvas(nextLeftPage, DOM.pdfCanvasBack);
         }
         
-        DOM.pageFlip.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
+        // Animate flip
+        DOM.pageFlip.style.transition = 'transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1)';
         DOM.pageFlip.style.transform = 'rotateY(-180deg)';
-        await sleep(650);
+        
+        await sleep(600);
         
         state.currentSpread++;
+        
+        // Reset instantly
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
         
         await renderSpread(state.currentSpread);
+        
         await sleep(50);
-        DOM.pageFlip.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
+        DOM.pageFlip.style.transition = 'transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1)';
         
         state.isFlipping = false;
         updateNavButtons();
@@ -1082,23 +1377,30 @@
 
       async function flipPrev() {
         if (state.isFlipping || state.currentSpread <= 0) return;
+        
         state.isFlipping = true;
         updateNavButtons();
         
+        // Pre-render on back
         const prevRightPage = state.currentSpread * 2;
         if (prevRightPage <= state.totalPages) {
           await renderPageToCanvas(prevRightPage, DOM.pdfCanvasBack);
         }
         
+        // Set to flipped position
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(-180deg)';
+        
         state.currentSpread--;
         await renderSpread(state.currentSpread);
+        
         await sleep(50);
         
-        DOM.pageFlip.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
+        // Animate back
+        DOM.pageFlip.style.transition = 'transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1)';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
-        await sleep(650);
+        
+        await sleep(600);
         
         state.isFlipping = false;
         updateNavButtons();
@@ -1113,88 +1415,164 @@
       }
 
       // ============================================
-      // EVENTS
+      // EVENT LISTENERS
       // ============================================
       DOM.btnPrev.addEventListener('click', flipPrev);
       DOM.btnNext.addEventListener('click', flipNext);
       DOM.btnBack.addEventListener('click', goBack);
 
+      // Keyboard navigation
       document.addEventListener('keydown', function(e) {
         if (!state.currentBook || state.isFlipping) return;
-        if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); flipNext(); }
-        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); flipPrev(); }
-        else if (e.key === 'Escape') { goBack(); }
+        
+        switch(e.key) {
+          case 'ArrowRight':
+          case 'PageDown':
+            e.preventDefault();
+            flipNext();
+            break;
+          case 'ArrowLeft':
+          case 'PageUp':
+            e.preventDefault();
+            flipPrev();
+            break;
+          case 'Escape':
+            goBack();
+            break;
+          case 'Home':
+            e.preventDefault();
+            if (state.currentSpread > 0) {
+              state.currentSpread = 0;
+              renderSpread(0);
+            }
+            break;
+          case 'End':
+            e.preventDefault();
+            if (state.currentSpread < state.totalSpreads - 1) {
+              state.currentSpread = state.totalSpreads - 1;
+              renderSpread(state.currentSpread);
+            }
+            break;
+        }
       });
 
-      let tx = 0;
-      DOM.pageFront.addEventListener('touchstart', function(e) {
+      // Touch swipe on right page
+      let touchStartX = 0;
+      let touchStartY = 0;
+      
+      DOM.pageFrontFace.addEventListener('touchstart', function(e) {
         if (!state.currentBook || state.isFlipping) return;
-        tx = e.touches[0].clientX;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
       }, {passive: true});
 
-      DOM.pageFront.addEventListener('touchend', function(e) {
-        if (!state.currentBook || state.isFlipping || !tx) return;
-        const dx = tx - e.changedTouches[0].clientX;
-        if (Math.abs(dx) > 40) { dx > 0 ? flipNext() : flipPrev(); }
-        tx = 0;
+      DOM.pageFrontFace.addEventListener('touchend', function(e) {
+        if (!state.currentBook || state.isFlipping || !touchStartX) return;
+        
+        const dx = touchStartX - e.changedTouches[0].clientX;
+        const dy = touchStartY - e.changedTouches[0].clientY;
+        
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+          dx > 0 ? flipNext() : flipPrev();
+        }
+        touchStartX = 0;
       });
 
-      DOM.pageFront.addEventListener('click', function(e) {
+      // Click edges on right page
+      DOM.pageFrontFace.addEventListener('click', function(e) {
         if (!state.currentBook || state.isFlipping) return;
-        const rect = DOM.pageFront.getBoundingClientRect();
+        
+        const rect = DOM.pageFrontFace.getBoundingClientRect();
         const x = e.clientX - rect.left;
-        if (x < rect.width * 0.3) flipPrev();
-        else if (x > rect.width * 0.7) flipNext();
+        const width = rect.width;
+        
+        if (x < width * 0.25) {
+          flipPrev();
+        } else if (x > width * 0.75) {
+          flipNext();
+        }
       });
 
-      let rt;
+      // Resize handler
+      let resizeTimeout;
       window.addEventListener('resize', function() {
-        clearTimeout(rt);
-        rt = setTimeout(() => {
-          if (state.pdfDoc && state.currentBook) renderSpread(state.currentSpread);
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+          if (state.pdfDoc && state.currentBook) {
+            renderSpread(state.currentSpread);
+          }
         }, 300);
       });
 
       // ============================================
-      // PWA
+      // PWA SERVICE WORKER
       // ============================================
       if ('serviceWorker' in navigator) {
         const swCode = `
-          self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
-          self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+          const CACHE_NAME = 'digital-lib-v3';
+          self.addEventListener('install', e => {
+            e.waitUntil(self.skipWaiting());
+          });
+          self.addEventListener('activate', e => {
+            e.waitUntil(self.clients.claim());
+          });
           self.addEventListener('fetch', e => {
             e.respondWith(
-              caches.match(e.request).then(r => r || fetch(e.request).then(res => {
-                const clone = res.clone();
-                caches.open('dl-v2').then(c => c.put(e.request, clone));
-                return res;
-              }))
+              caches.match(e.request).then(cached => {
+                return cached || fetch(e.request).then(response => {
+                  const clone = response.clone();
+                  caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+                  return response;
+                });
+              })
             );
           });
         `;
-        const swBlob = new Blob([swCode], {type: 'application/javascript'});
-        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+        
+        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(swBlob))
+          .then(() => console.log('✅ SW registered'))
+          .catch(() => console.log('SW skipped'));
       }
 
       // ============================================
-      // INIT
+      // INITIALIZATION
       // ============================================
-      console.log('📖 Digital Library Init');
-      console.log('✅ Base64 Mode - No CORS');
-      console.log('✅ PDF.js from multiple sources');
-      console.log('✅ Tracking Prevention bypassed');
+      console.log('📖 Digital Library v3.0');
+      console.log('✅ Base64 Mode Active');
+      console.log('✅ Cache Enabled (30 min)');
+      console.log('✅ Retry Mechanism (max ' + MAX_RETRIES + 'x)');
+      console.log('✅ PDF.js from jsDelivr');
       
-      // Wait for PDF.js then fetch books
-      waitForPDFJS()
-        .then(() => {
-          console.log('✅ PDF.js ready');
-          fetchBooks();
-        })
-        .catch(err => {
-          console.error('❌ PDF.js failed:', err);
-          showError('PDF.js gagal dimuat. Coba refresh halaman.', 6000);
-          fetchBooks(); // Still fetch books for library view
-        });
+      // Wait for PDF.js
+      function waitForPDFJS(callback) {
+        if (typeof pdfjsLib !== 'undefined') {
+          callback();
+          return;
+        }
+        
+        let attempts = 0;
+        const interval = setInterval(() => {
+          attempts++;
+          if (typeof pdfjsLib !== 'undefined') {
+            clearInterval(interval);
+            callback();
+          } else if (attempts > 30) {
+            clearInterval(interval);
+            console.warn('⚠️ PDF.js not available, using fallback');
+            callback();
+          }
+        }, 200);
+      }
+
+      waitForPDFJS(() => {
+        console.log('✅ PDF.js ready');
+        fetchBooks();
+      });
+
+      // Expose untuk debugging
+      window.DL = { state, DOM, fetchBooks };
+      
     })();
   </script>
 </body>
