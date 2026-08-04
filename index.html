@@ -32,7 +32,7 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
-      touch-action: pan-y;
+      touch-action: pan-x;
     }
 
     /* ===== APP SHELL ===== */
@@ -171,7 +171,7 @@
       display: flex;
       align-items: center;
       padding: 10px 15px;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -216,125 +216,179 @@
       white-space: nowrap;
     }
 
-    /* Book container */
+    /* ===== BOOK CONTAINER - FULLSCREEN BOOK ===== */
     .book-area {
       flex: 1;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      perspective: 2000px;
+      perspective: 2500px;
       overflow: hidden;
-      padding: 15px;
+      padding: 20px;
+      background: radial-gradient(ellipse at center, #1a1410 0%, #0a0a0a 70%);
     }
 
-    .book-shadow {
+    .book-surface {
       position: absolute;
-      bottom: 3%;
+      bottom: 2%;
       left: 50%;
       transform: translateX(-50%);
-      width: 60%;
-      height: 20px;
-      background: radial-gradient(ellipse, rgba(0,0,0,0.7) 0%, transparent 70%);
+      width: 65%;
+      height: 25px;
+      background: radial-gradient(ellipse, rgba(0,0,0,0.8) 0%, transparent 70%);
       pointer-events: none;
+      z-index: 0;
     }
 
-    .flip-book {
-      width: 100%;
-      height: 100%;
-      max-width: 1000px;
-      max-height: 750px;
+    /* ===== OPEN BOOK (DUA HALAMAN) ===== */
+    .open-book {
+      width: 95%;
+      height: 90%;
+      max-width: 1200px;
+      max-height: 850px;
       position: relative;
-      z-index: 5;
-    }
-
-    /* Page stacks */
-    .stack {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: #2a2218;
-      border-radius: 2px 10px 10px 2px;
-      pointer-events: none;
-    }
-    .stack:nth-child(1) { transform: translateX(3px) translateY(-2px); z-index: 1; opacity: 0.8; }
-    .stack:nth-child(2) { transform: translateX(6px) translateY(-4px); z-index: 0; opacity: 0.6; }
-    .stack:nth-child(3) { transform: translateX(9px) translateY(-6px); z-index: -1; opacity: 0.4; }
-
-    /* Main page */
-    .page {
-      position: absolute;
-      width: 100%;
-      height: 100%;
+      display: flex;
       transform-style: preserve-3d;
-      transform-origin: left center;
       z-index: 5;
-      transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
     }
 
-    .page-back {
+    /* Halaman Kiri */
+    .page-left {
+      width: 50%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transform-origin: right center;
+      transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+      z-index: 3;
+    }
+
+    .page-left.flip-left {
+      transform: rotateY(-150deg);
+      z-index: 1;
+    }
+
+    .page-left-front {
       position: absolute;
       inset: 0;
-      background: linear-gradient(to right, #e5d8c8, #d5c8b0);
+      background: linear-gradient(to right, #f5ede1 0%, #fdf8f2 100%);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 12px 2px 2px 12px;
+      box-shadow: 
+        inset 2px 0 10px rgba(0,0,0,0.05),
+        -2px 0 15px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+    }
+
+    .page-left-back {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to left, #e5d8c8 0%, #d5c8b0 100%);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
       transform: rotateY(180deg);
-      border-radius: 10px 2px 2px 10px;
-      box-shadow: inset -2px 0 8px rgba(0,0,0,0.06);
+      border-radius: 2px 12px 12px 2px;
+      box-shadow: 
+        inset -2px 0 8px rgba(0,0,0,0.04),
+        2px 0 10px rgba(0,0,0,0.08);
     }
 
-    .page-front {
+    /* Halaman Kanan */
+    .page-right {
+      width: 50%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transform-origin: left center;
+      transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+      z-index: 3;
+    }
+
+    .page-right.flip-right {
+      transform: rotateY(-150deg);
+      z-index: 1;
+    }
+
+    .page-right-front {
       position: absolute;
       inset: 0;
-      background: var(--page-bg);
+      background: linear-gradient(to left, #f5ede1 0%, #fdf8f2 100%);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
-      border-radius: 2px 10px 10px 2px;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+      border-radius: 2px 12px 12px 2px;
+      box-shadow: 
+        inset -2px 0 10px rgba(0,0,0,0.05),
+        2px 0 15px rgba(0,0,0,0.1);
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
     }
 
-    .page-front::after {
-      content: '';
+    .page-right-back {
       position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 8px;
-      background: linear-gradient(to right, rgba(0,0,0,0.04), transparent);
-      pointer-events: none;
-      z-index: 2;
+      inset: 0;
+      background: linear-gradient(to right, #e5d8c8 0%, #d5c8b0 100%);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      transform: rotateY(180deg);
+      border-radius: 12px 2px 2px 12px;
+      box-shadow: 
+        inset 2px 0 8px rgba(0,0,0,0.04),
+        -2px 0 10px rgba(0,0,0,0.08);
     }
 
-    /* PDF viewport */
-    .pdf-view {
+    /* PDF Viewport dalam halaman - HORIZONTAL SCROLL */
+    .pdf-viewport {
       flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      scroll-behavior: smooth;
+      scroll-snap-type: x mandatory;
+    }
+
+    .pdf-viewport::-webkit-scrollbar {
+      height: 5px;
+    }
+
+    .pdf-viewport::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.03);
+      border-radius: 3px;
+    }
+
+    .pdf-viewport::-webkit-scrollbar-thumb {
+      background: rgba(139,90,43,0.2);
+      border-radius: 3px;
+    }
+
+    .pdf-viewport::-webkit-scrollbar-thumb:hover {
+      background: rgba(139,90,43,0.35);
+    }
+
+    .pdf-canvas-wrapper {
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: auto;
-      padding: 20px;
-      background: repeating-linear-gradient(0deg, transparent, transparent 29px, rgba(139,90,43,0.02) 29px, rgba(139,90,43,0.02) 30px);
+      min-width: 100%;
+      scroll-snap-align: center;
     }
-
-    .pdf-view::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
-    }
-    .pdf-view::-webkit-scrollbar-track { background: transparent; }
-    .pdf-view::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
 
     .pdf-canvas {
-      max-width: 100%;
       max-height: 100%;
+      width: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
       border-radius: 2px;
-      background: #fff;
+      background: white;
     }
 
-    .page-num {
+    /* Page number footer */
+    .page-footer {
       text-align: center;
       padding: 8px;
       font-size: 0.7rem;
@@ -342,23 +396,33 @@
       border-top: 1px solid rgba(0,0,0,0.05);
       flex-shrink: 0;
       font-style: italic;
+      background: rgba(253,248,242,0.5);
     }
 
-    /* Spine */
-    .spine {
+    /* Spine/Binding */
+    .book-spine {
       position: absolute;
       left: 50%;
-      top: 2%;
-      bottom: 2%;
-      width: 3px;
-      background: linear-gradient(to right, rgba(0,0,0,0.3), rgba(0,0,0,0.5), rgba(0,0,0,0.2));
+      top: 1%;
+      bottom: 1%;
+      width: 6px;
+      background: linear-gradient(to right, 
+        rgba(0,0,0,0.2) 0%,
+        rgba(0,0,0,0.4) 20%,
+        rgba(50,30,10,0.6) 50%,
+        rgba(0,0,0,0.3) 80%,
+        rgba(0,0,0,0.1) 100%
+      );
       transform: translateX(-50%);
-      z-index: 15;
+      z-index: 10;
       pointer-events: none;
-      border-radius: 1px;
+      border-radius: 3px;
+      box-shadow: 
+        0 0 10px rgba(0,0,0,0.3),
+        inset 0 0 3px rgba(255,255,255,0.05);
     }
 
-    /* Loading */
+    /* ===== LOADING ===== */
     .loading-overlay {
       position: absolute;
       inset: 0;
@@ -378,17 +442,18 @@
 
     .spin-book {
       display: flex;
-      gap: 3px;
+      gap: 4px;
     }
 
     .spin-book span {
-      width: 8px;
-      height: 30px;
+      width: 10px;
+      height: 35px;
       background: var(--accent);
       border-radius: 2px;
       animation: spinPage 1.2s infinite;
       transform-origin: left center;
     }
+
     .spin-book span:nth-child(2) { animation-delay: 0.2s; }
     .spin-book span:nth-child(3) { animation-delay: 0.4s; }
 
@@ -404,14 +469,14 @@
       letter-spacing: 2px;
     }
 
-    /* Bottom bar */
+    /* ===== NAVIGATION ===== */
     .bottombar {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 15px;
       padding: 12px 20px;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-top: 1px solid rgba(255,255,255,0.05);
@@ -419,13 +484,13 @@
     }
 
     .nav-btn {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       border: 1px solid rgba(255,255,255,0.15);
       background: rgba(255,255,255,0.05);
       color: var(--text);
-      font-size: 1rem;
+      font-size: 1.1rem;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
@@ -436,7 +501,7 @@
     .nav-btn:hover:not(:disabled) {
       background: rgba(255,255,255,0.12);
       border-color: var(--accent);
-      box-shadow: 0 0 15px rgba(201,168,124,0.2);
+      box-shadow: 0 0 20px rgba(201,168,124,0.2);
     }
 
     .nav-btn:active:not(:disabled) {
@@ -450,14 +515,14 @@
 
     .page-indicator {
       color: var(--text);
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       font-weight: 600;
       letter-spacing: 1px;
-      min-width: 80px;
+      min-width: 90px;
       text-align: center;
       background: rgba(255,255,255,0.04);
-      padding: 6px 14px;
-      border-radius: 15px;
+      padding: 8px 16px;
+      border-radius: 20px;
       border: 1px solid rgba(255,255,255,0.08);
     }
 
@@ -473,47 +538,90 @@
       color: #c0392b;
     }
 
-    .error-box .icon {
-      font-size: 3rem;
-      margin-bottom: 10px;
+    /* Page curl */
+    .page-curl-left {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 30px;
+      height: 30px;
+      pointer-events: none;
+      z-index: 5;
     }
 
-    /* Responsive */
-    @media (max-width: 600px) {
+    .page-curl-left::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      border-style: solid;
+      border-width: 0 0 25px 25px;
+      border-color: transparent transparent #e0d0c0 transparent;
+    }
+
+    .page-curl-right {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 30px;
+      height: 30px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .page-curl-right::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      border-style: solid;
+      border-width: 0 25px 25px 0;
+      border-color: transparent #e0d0c0 transparent transparent;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .open-book {
+        width: 98%;
+        height: 92%;
+      }
+
+      .pdf-viewport {
+        padding: 10px;
+      }
+
       .book-list {
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
-        padding: 10px;
       }
-      .book-item {
-        padding: 15px 10px;
-      }
-      .book-item .icon {
-        font-size: 2rem;
-      }
-      .book-item .title {
-        font-size: 0.75rem;
-      }
-      .pdf-view {
-        padding: 10px;
-      }
+
       .topbar {
         padding: 8px 10px;
       }
+
       .bottombar {
         padding: 10px 12px;
-        gap: 10px;
       }
+
       .nav-btn {
-        width: 36px;
-        height: 36px;
+        width: 38px;
+        height: 38px;
+        font-size: 1rem;
       }
     }
 
-    @media (max-width: 380px) {
-      .book-list {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
+    @media (max-width: 480px) {
+      .open-book {
+        width: 100%;
+        padding: 5px;
+      }
+
+      .pdf-viewport {
+        padding: 5px;
+      }
+
+      .book-spine {
+        width: 3px;
       }
     }
 
@@ -524,70 +632,87 @@
       .bottombar {
         padding: 5px 10px;
       }
-      .pdf-view {
-        padding: 5px;
+      .book-area {
+        padding: 10px;
       }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <!-- LIBRARY -->
+    <!-- ===== LIBRARY ===== -->
     <div class="library" id="library">
       <div class="lib-header">
         <h1>📚 Digital Library</h1>
-        <p>PDF Flip Book Collection</p>
+        <p>PDF Flip Book - Two Page Spread</p>
       </div>
       <div class="book-list" id="bookList">
         <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;padding:50px;color:#6b5e4e;">
-          <div class="spin-book">
-            <span></span><span></span><span></span>
-          </div>
+          <div class="spin-book"><span></span><span></span><span></span></div>
           <div class="loading-text">Loading books...</div>
         </div>
       </div>
     </div>
 
-    <!-- READER -->
+    <!-- ===== READER ===== -->
     <div class="reader" id="reader">
+      <!-- Top Bar -->
       <div class="topbar">
         <button class="btn-back" id="btnBack">← Library</button>
         <div class="book-title-top" id="bookTitleTop">Select a book</div>
-        <div class="page-info-top" id="pageInfoTop">Page 1</div>
+        <div class="page-info-top" id="pageInfoTop">Pages 1-2</div>
       </div>
 
+      <!-- Book Area -->
       <div class="book-area">
-        <div class="book-shadow"></div>
+        <div class="book-surface"></div>
         
-        <div class="flip-book">
-          <div class="stack"></div>
-          <div class="stack"></div>
-          <div class="stack"></div>
+        <!-- Open Book (Two Pages) -->
+        <div class="open-book" id="openBook">
           
-          <div class="page" id="mainPage">
-            <div class="page-back"></div>
-            <div class="page-front" id="pageFront">
-              <div class="pdf-view" id="pdfView">
-                <canvas class="pdf-canvas" id="pdfCanvas"></canvas>
+          <!-- LEFT PAGE -->
+          <div class="page-left" id="pageLeft">
+            <div class="page-left-back"></div>
+            <div class="page-left-front" id="pageLeftFront">
+              <div class="pdf-viewport" id="pdfViewLeft">
+                <div class="pdf-canvas-wrapper">
+                  <canvas class="pdf-canvas" id="pdfCanvasLeft"></canvas>
+                </div>
               </div>
-              <div class="page-num" id="pageNum">— Page 1 —</div>
+              <div class="page-footer" id="pageFooterLeft">— Page 1 —</div>
+              <div class="page-curl-left"></div>
             </div>
           </div>
           
-          <div class="spine"></div>
+          <!-- RIGHT PAGE -->
+          <div class="page-right" id="pageRight">
+            <div class="page-right-back"></div>
+            <div class="page-right-front" id="pageRightFront">
+              <div class="pdf-viewport" id="pdfViewRight">
+                <div class="pdf-canvas-wrapper">
+                  <canvas class="pdf-canvas" id="pdfCanvasRight"></canvas>
+                </div>
+              </div>
+              <div class="page-footer" id="pageFooterRight">— Page 2 —</div>
+              <div class="page-curl-right"></div>
+            </div>
+          </div>
+          
+          <!-- Spine -->
+          <div class="book-spine"></div>
         </div>
 
+        <!-- Loading -->
         <div class="loading-overlay" id="loadingOverlay">
-          <div class="spin-book">
-            <span></span><span></span><span></span>
-          </div>
+          <div class="spin-book"><span></span><span></span><span></span></div>
           <div class="loading-text">Opening PDF...</div>
         </div>
       </div>
 
+      <!-- Bottom Navigation -->
       <div class="bottombar">
         <button class="nav-btn" id="btnPrev" disabled>◀</button>
-        <span class="page-indicator" id="pageIndicator">1 / 1</span>
+        <span class="page-indicator" id="pageIndicator">1-2 / 1</span>
         <button class="nav-btn" id="btnNext" disabled>▶</button>
       </div>
     </div>
@@ -600,7 +725,6 @@
       // ============================================
       const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwG0iQUK0-2evTzBfjM3pmEVBHDrlzroyJzdk-9ZfrSaA8l7POsziMHSXjSitUWeZrN/exec';
       
-      // Set PDF.js worker
       if (typeof pdfjsLib !== 'undefined') {
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
       }
@@ -611,10 +735,10 @@
       let books = [];
       let currentBook = null;
       let pdfDoc = null;
-      let currentPage = 1;
+      let currentSpread = 1; // Spread = dua halaman (kiri & kanan)
       let totalPages = 0;
+      let totalSpreads = 0;
       let isFlipping = false;
-      let isRendering = false;
 
       // ============================================
       // DOM ELEMENTS
@@ -624,12 +748,15 @@
       const library = $('library');
       const bookList = $('bookList');
       const reader = $('reader');
-      const mainPage = $('mainPage');
-      const pageFront = $('pageFront');
-      const pdfView = $('pdfView');
-      const pdfCanvas = $('pdfCanvas');
+      const pageLeft = $('pageLeft');
+      const pageRight = $('pageRight');
+      const pdfViewLeft = $('pdfViewLeft');
+      const pdfViewRight = $('pdfViewRight');
+      const pdfCanvasLeft = $('pdfCanvasLeft');
+      const pdfCanvasRight = $('pdfCanvasRight');
       const loadingOverlay = $('loadingOverlay');
-      const pageNum = $('pageNum');
+      const pageFooterLeft = $('pageFooterLeft');
+      const pageFooterRight = $('pageFooterRight');
       const pageIndicator = $('pageIndicator');
       const pageInfoTop = $('pageInfoTop');
       const bookTitleTop = $('bookTitleTop');
@@ -647,25 +774,20 @@
           
           if (data.success && data.books && data.books.length > 0) {
             books = data.books;
-            renderLibrary();
           } else {
-            // Fallback: gunakan default book
             books = [{
               title: '📄 Sample PDF Document',
-              url: 'https://drive.google.com/open?id=11331lbF_25t8rLm5MPkHiJJlyMeG7uGy',
               fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy'
             }];
-            renderLibrary();
           }
         } catch (error) {
-          console.warn('Cannot fetch from WebApp, using default book');
+          console.warn('Using default book');
           books = [{
             title: '📄 Sample PDF Document',
-            url: 'https://drive.google.com/open?id=11331lbF_25t8rLm5MPkHiJJlyMeG7uGy',
             fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy'
           }];
-          renderLibrary();
         }
+        renderLibrary();
       }
 
       function renderLibrary() {
@@ -687,25 +809,23 @@
         currentBook = books[index];
         bookTitleTop.textContent = currentBook.title;
         
-        // Reset
+        // Reset state
         pdfDoc = null;
-        currentPage = 1;
+        currentSpread = 1;
         totalPages = 0;
+        totalSpreads = 0;
         isFlipping = false;
+        
+        // Reset transforms
+        pageLeft.style.transition = 'none';
+        pageLeft.style.transform = 'rotateY(0deg)';
+        pageLeft.classList.remove('flip-left');
+        pageRight.style.transition = 'none';
+        pageRight.style.transform = 'rotateY(0deg)';
+        pageRight.classList.remove('flip-right');
         
         // Show reader
         reader.classList.add('active');
-        
-        // Reset page transform
-        mainPage.style.transition = 'none';
-        mainPage.style.transform = 'rotateY(0deg)';
-        
-        // Reset canvas
-        pdfView.innerHTML = '<canvas class="pdf-canvas" id="pdfCanvas"></canvas>';
-        // Update reference
-        window._pdfCanvas = pdfView.querySelector('#pdfCanvas');
-        
-        updateUI();
         showLoading(true);
         
         try {
@@ -720,11 +840,9 @@
       // LOAD PDF
       // ============================================
       async function loadPDF(fileId) {
-        // Try multiple URL patterns
         const urls = [
           `https://drive.google.com/uc?export=download&id=${fileId}`,
           `https://drive.google.com/uc?id=${fileId}&export=download`,
-          `https://docs.google.com/file/d/${fileId}/preview`,
         ];
         
         let loaded = false;
@@ -735,55 +853,71 @@
               url: url,
               cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
               cMapPacked: true,
-              withCredentials: false,
             });
             
             pdfDoc = await loadingTask.promise;
             totalPages = pdfDoc.numPages;
-            currentPage = 1;
+            totalSpreads = Math.ceil(totalPages / 2);
+            currentSpread = 1;
             
-            await renderPage(1);
+            await renderSpread(1);
             showLoading(false);
             updateUI();
             loaded = true;
             break;
           } catch (e) {
-            console.warn('Failed with URL:', url, e.message);
-            continue;
+            console.warn('Failed:', url, e.message);
           }
         }
         
-        if (!loaded) {
-          throw new Error('All URL patterns failed');
-        }
+        if (!loaded) throw new Error('All URLs failed');
       }
 
       // ============================================
-      // RENDER PAGE
+      // RENDER SPREAD (LEFT & RIGHT PAGES)
       // ============================================
-      async function renderPage(pageNum) {
+      async function renderSpread(spreadNum) {
         if (!pdfDoc) return;
         
-        isRendering = true;
-        const canvas = pdfView.querySelector('#pdfCanvas') || window._pdfCanvas;
+        const leftPageNum = (spreadNum - 1) * 2 + 1;
+        const rightPageNum = leftPageNum + 1;
         
-        if (!canvas) {
-          isRendering = false;
-          return;
+        // Render left page
+        await renderPageToCanvas(leftPageNum, pdfCanvasLeft, pdfViewLeft);
+        pageFooterLeft.textContent = leftPageNum <= totalPages ? `— Page ${leftPageNum} —` : '';
+        
+        // Render right page (if exists)
+        if (rightPageNum <= totalPages) {
+          await renderPageToCanvas(rightPageNum, pdfCanvasRight, pdfViewRight);
+          pageFooterRight.textContent = `— Page ${rightPageNum} —`;
+          pdfViewRight.style.display = 'flex';
+          pageFooterRight.style.display = 'block';
+        } else {
+          // Hide right page if no content
+          pdfCanvasRight.style.display = 'none';
+          pageFooterRight.textContent = '';
         }
+        
+        pageInfoTop.textContent = `Pages ${leftPageNum}-${Math.min(rightPageNum, totalPages)}`;
+        pageIndicator.textContent = `${spreadNum} / ${totalSpreads}`;
+      }
+
+      async function renderPageToCanvas(pageNum, canvas, viewport) {
+        if (pageNum > totalPages) return;
         
         try {
           const page = await pdfDoc.getPage(pageNum);
           
-          const containerW = pdfView.clientWidth - 30;
-          const containerH = pdfView.clientHeight - 30;
+          const containerW = viewport.clientWidth - 20;
+          const containerH = viewport.clientHeight - 20;
           
           const vp = page.getViewport({ scale: 1 });
-          const scale = Math.min(containerW / vp.width, containerH / vp.height, 2.5);
+          const scale = Math.min(containerW / vp.width, containerH / vp.height, 2);
           const svp = page.getViewport({ scale });
           
           canvas.height = svp.height;
           canvas.width = svp.width;
+          canvas.style.display = 'block';
           
           const ctx = canvas.getContext('2d');
           ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -794,90 +928,111 @@
             background: '#ffffff',
           }).promise;
           
-          pageNum.textContent = `— Page ${pageNum} —`;
-          pageInfoTop.textContent = `Page ${pageNum}`;
-          pageIndicator.textContent = `${pageNum} / ${totalPages}`;
+          // Horizontal scroll: center canvas
+          viewport.scrollLeft = (canvas.width - viewport.clientWidth) / 2;
           
         } catch (err) {
-          console.error('Render error:', err);
+          console.error('Render error page', pageNum, err);
         }
-        
-        isRendering = false;
       }
 
       function showFallback(fileId) {
         showLoading(false);
-        pdfView.innerHTML = `
+        
+        const iframeHtml = `
           <iframe 
             src="https://drive.google.com/file/d/${fileId}/preview"
-            style="width:100%;height:100%;border:none;border-radius:4px;"
-            allow="autoplay"
+            style="width:100%;height:100%;border:none;"
           ></iframe>`;
+        
+        pdfViewLeft.innerHTML = iframeHtml;
+        pdfViewRight.innerHTML = iframeHtml;
+        
         totalPages = 1;
-        currentPage = 1;
-        pageNum.textContent = '— PDF Viewer —';
+        totalSpreads = 1;
+        currentSpread = 1;
+        pageFooterLeft.textContent = '— PDF Viewer —';
+        pageFooterRight.textContent = '';
         updateUI();
       }
 
       // ============================================
-      // FLIP ANIMATION
+      // FLIP ANIMATION (NEXT SPREAD)
       // ============================================
       async function flipNext() {
-        if (isFlipping || isRendering || currentPage >= totalPages) return;
+        if (isFlipping || currentSpread >= totalSpreads) return;
         
         isFlipping = true;
         disableNav();
         
-        // Animate flip
-        mainPage.style.transition = 'transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1)';
-        mainPage.style.transform = 'rotateY(-180deg)';
+        // Flip left page (current spread)
+        pageLeft.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
+        pageLeft.classList.add('flip-left');
         
-        await sleep(350);
+        // Flip right page
+        pageRight.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
+        pageRight.classList.add('flip-right');
         
-        currentPage++;
+        await sleep(400);
         
-        // Reset instantly
-        mainPage.style.transition = 'none';
-        mainPage.style.transform = 'rotateY(0deg)';
+        // Update spread
+        currentSpread++;
         
-        await renderPage(currentPage);
+        // Reset transforms instantly
+        pageLeft.style.transition = 'none';
+        pageLeft.classList.remove('flip-left');
+        pageRight.style.transition = 'none';
+        pageRight.classList.remove('flip-right');
         
+        // Render new spread
+        await renderSpread(currentSpread);
+        
+        // Restore transitions
         await sleep(50);
-        mainPage.style.transition = 'transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1)';
+        pageLeft.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
+        pageRight.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
         
         updateUI();
         isFlipping = false;
       }
 
+      // ============================================
+      // FLIP ANIMATION (PREV SPREAD)
+      // ============================================
       async function flipPrev() {
-        if (isFlipping || isRendering || currentPage <= 1) return;
+        if (isFlipping || currentSpread <= 1) return;
         
         isFlipping = true;
         disableNav();
         
-        currentPage--;
-        await renderPage(currentPage);
-        
-        // Set to flipped position
-        mainPage.style.transition = 'none';
-        mainPage.style.transform = 'rotateY(-180deg)';
+        // Set to flipped state first
+        pageLeft.style.transition = 'none';
+        pageLeft.classList.add('flip-left');
+        pageRight.style.transition = 'none';
+        pageRight.classList.add('flip-right');
         
         await sleep(50);
         
-        // Animate back
-        mainPage.style.transition = 'transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1)';
-        mainPage.style.transform = 'rotateY(0deg)';
+        // Update spread
+        currentSpread--;
+        await renderSpread(currentSpread);
         
-        await sleep(600);
+        // Animate back
+        pageLeft.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
+        pageLeft.classList.remove('flip-left');
+        pageRight.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
+        pageRight.classList.remove('flip-right');
+        
+        await sleep(650);
         
         updateUI();
         isFlipping = false;
       }
 
       function updateUI() {
-        btnPrev.disabled = currentPage <= 1 || isFlipping;
-        btnNext.disabled = currentPage >= totalPages || isFlipping;
-        pageIndicator.textContent = `${currentPage} / ${totalPages}`;
+        btnPrev.disabled = currentSpread <= 1 || isFlipping;
+        btnNext.disabled = currentSpread >= totalSpreads || isFlipping;
+        pageIndicator.textContent = `${currentSpread} / ${totalSpreads}`;
       }
 
       function disableNav() {
@@ -893,8 +1048,10 @@
         reader.classList.remove('active');
         pdfDoc = null;
         currentBook = null;
-        mainPage.style.transition = 'none';
-        mainPage.style.transform = 'rotateY(0deg)';
+        pageLeft.style.transition = 'none';
+        pageLeft.classList.remove('flip-left');
+        pageRight.style.transition = 'none';
+        pageRight.classList.remove('flip-right');
       }
 
       function sleep(ms) {
@@ -916,7 +1073,7 @@
       btnBack.addEventListener('click', goBack);
 
       document.addEventListener('keydown', (e) => {
-        if (!currentBook) return;
+        if (!currentBook || isFlipping) return;
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
           e.preventDefault(); flipNext();
         } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
@@ -926,31 +1083,20 @@
         }
       });
 
-      // Touch
-      let tx = 0, ty = 0;
+      // Touch swipe
+      let tx = 0;
       document.addEventListener('touchstart', (e) => {
         if (!currentBook || isFlipping) return;
         tx = e.touches[0].clientX;
-        ty = e.touches[0].clientY;
       }, {passive: true});
 
       document.addEventListener('touchend', (e) => {
         if (!currentBook || isFlipping || !tx) return;
         const dx = tx - e.changedTouches[0].clientX;
-        const dy = ty - e.changedTouches[0].clientY;
-        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+        if (Math.abs(dx) > 50) {
           dx > 0 ? flipNext() : flipPrev();
         }
         tx = 0;
-      });
-
-      // Click edges
-      pageFront.addEventListener('click', (e) => {
-        if (!currentBook || isFlipping) return;
-        const rect = pageFront.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        if (x < rect.width * 0.25) flipPrev();
-        else if (x > rect.width * 0.75) flipNext();
       });
 
       // Resize
@@ -958,7 +1104,7 @@
       window.addEventListener('resize', () => {
         clearTimeout(rt);
         rt = setTimeout(() => {
-          if (pdfDoc && currentBook) renderPage(currentPage);
+          if (pdfDoc && currentBook) renderSpread(currentSpread);
         }, 400);
       });
 
@@ -977,7 +1123,7 @@
 
       // Init
       fetchBooks();
-      console.log('✅ PDF Flip Book Ready');
+      console.log('✅ PDF Flip Book - Two Page Spread Ready');
     })();
   </script>
 </body>
