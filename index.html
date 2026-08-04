@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0a0a0a">
   <meta name="description" content="E-Book Digital Library - Flip Book Reader">
@@ -12,8 +12,6 @@
   <link rel="icon" href="https://i.imgur.com/JkxRYd6.png">
   <link rel="apple-touch-icon" href="https://i.imgur.com/JkxRYd6.png">
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  
   <style>
     :root {
       --bg: #0a0a0a;
@@ -21,10 +19,7 @@
       --text: #e0d5c5;
       --text-secondary: #8a7a6a;
       --accent: #c9a87c;
-      --accent-hover: #d4b896;
       --page-color: #fdf8f2;
-      --border-subtle: rgba(255,255,255,0.06);
-      --shadow: 0 4px 24px rgba(0,0,0,0.5);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -42,15 +37,9 @@
       touch-action: pan-y;
     }
 
-    .app {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-    }
+    .app { width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; }
 
-    /* ===== HEADER BAR ===== */
+    /* ===== HEADER ===== */
     .app-header {
       display: flex;
       align-items: center;
@@ -59,7 +48,7 @@
       background: rgba(0,0,0,0.85);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border-subtle);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
       z-index: 100;
       flex-shrink: 0;
     }
@@ -103,12 +92,9 @@
     .search-input:focus {
       border-color: var(--accent);
       background: rgba(255,255,255,0.1);
-      box-shadow: 0 0 0 3px rgba(201,168,124,0.1);
     }
 
-    .search-input::placeholder {
-      color: var(--text-secondary);
-    }
+    .search-input::placeholder { color: var(--text-secondary); }
 
     .search-icon {
       position: absolute;
@@ -120,12 +106,7 @@
       pointer-events: none;
     }
 
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
     .year-badge {
       padding: 5px 12px;
@@ -137,25 +118,15 @@
       cursor: pointer;
       transition: all 0.2s;
       border: 1px solid rgba(201,168,124,0.2);
+      font-family: inherit;
     }
 
-    .year-badge:hover {
-      background: rgba(201,168,124,0.25);
-    }
+    .year-badge:hover { background: rgba(201,168,124,0.25); }
+    .year-badge.active { background: var(--accent); color: #1a1a1a; }
 
-    .year-badge.active {
-      background: var(--accent);
-      color: #1a1a1a;
-    }
+    /* ===== MAIN ===== */
+    .main-content { flex: 1; position: relative; overflow: hidden; }
 
-    /* ===== MAIN CONTENT ===== */
-    .main-content {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* ===== LIBRARY VIEW ===== */
     .library-view {
       position: absolute;
       inset: 0;
@@ -164,11 +135,7 @@
       transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
     }
 
-    .library-view.hidden {
-      opacity: 0;
-      transform: scale(0.97);
-      pointer-events: none;
-    }
+    .library-view.hidden { opacity: 0; transform: scale(0.97); pointer-events: none; }
 
     .filter-bar {
       display: flex;
@@ -194,17 +161,8 @@
       font-family: inherit;
     }
 
-    .filter-chip:hover {
-      background: rgba(255,255,255,0.1);
-      color: var(--text);
-    }
-
-    .filter-chip.active {
-      background: var(--accent);
-      color: #1a1a1a;
-      border-color: var(--accent);
-      font-weight: 600;
-    }
+    .filter-chip:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+    .filter-chip.active { background: var(--accent); color: #1a1a1a; border-color: var(--accent); font-weight: 600; }
 
     .book-grid-container {
       flex: 1;
@@ -213,14 +171,9 @@
     }
 
     .book-grid-container::-webkit-scrollbar { width: 4px; }
-    .book-grid-container::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.08);
-      border-radius: 2px;
-    }
+    .book-grid-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
 
-    .year-section {
-      margin-bottom: 20px;
-    }
+    .year-section { margin-bottom: 20px; }
 
     .year-title {
       color: var(--accent);
@@ -236,11 +189,7 @@
       gap: 8px;
     }
 
-    .year-title .count {
-      font-size: 0.7rem;
-      color: var(--text-secondary);
-      font-weight: 400;
-    }
+    .year-title .count { font-size: 0.7rem; color: var(--text-secondary); font-weight: 400; }
 
     .book-grid {
       display: grid;
@@ -259,20 +208,9 @@
       overflow: hidden;
     }
 
-    .book-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-      background: #1a1a1a;
-    }
-
-    .book-card:active {
-      transform: scale(0.96);
-    }
-
-    .book-card .card-icon {
-      font-size: 1.8rem;
-      margin-bottom: 6px;
-    }
+    .book-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.4); background: #1a1a1a; }
+    .book-card:active { transform: scale(0.96); }
+    .book-card .card-icon { font-size: 1.8rem; margin-bottom: 6px; }
 
     .book-card .card-title {
       color: var(--text);
@@ -285,11 +223,7 @@
       overflow: hidden;
     }
 
-    .book-card .card-meta {
-      color: var(--text-secondary);
-      font-size: 0.6rem;
-      margin-top: 4px;
-    }
+    .book-card .card-meta { color: var(--text-secondary); font-size: 0.6rem; margin-top: 4px; }
 
     .book-card .card-category {
       position: absolute;
@@ -302,14 +236,9 @@
       border-radius: 10px;
     }
 
-    .no-results {
-      grid-column: 1/-1;
-      text-align: center;
-      padding: 40px;
-      color: var(--text-secondary);
-    }
+    .no-results { grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary); }
 
-    /* ===== READER VIEW - FULL SCREEN ===== */
+    /* ===== READER ===== */
     .reader-view {
       position: absolute;
       inset: 0;
@@ -321,9 +250,7 @@
       z-index: 50;
     }
 
-    .reader-view.active {
-      transform: translateX(0);
-    }
+    .reader-view.active { transform: translateX(0); }
 
     .reader-topbar {
       display: flex;
@@ -351,9 +278,7 @@
       gap: 4px;
     }
 
-    .btn-back:hover {
-      background: rgba(255,255,255,0.15);
-    }
+    .btn-back:hover { background: rgba(255,255,255,0.15); }
 
     .reader-book-title {
       flex: 1;
@@ -373,7 +298,6 @@
       flex-shrink: 0;
     }
 
-    /* Book Area - Full Screen */
     .book-area {
       flex: 1;
       position: relative;
@@ -385,20 +309,9 @@
       background: #0a0a0a;
     }
 
-    .book-spread {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      position: relative;
-    }
+    .book-spread { width: 100%; height: 100%; display: flex; position: relative; }
 
-    /* LEFT PAGE */
-    .page-left-container {
-      width: 50%;
-      height: 100%;
-      position: relative;
-    }
-
+    .page-left-container { width: 50%; height: 100%; position: relative; }
     .page-left {
       position: absolute;
       inset: 0;
@@ -423,13 +336,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     }
 
-    /* RIGHT PAGE - Flippable */
-    .page-right-container {
-      width: 50%;
-      height: 100%;
-      position: relative;
-      perspective: 2000px;
-    }
+    .page-right-container { width: 50%; height: 100%; position: relative; perspective: 2000px; }
 
     .page-right-flip {
       position: absolute;
@@ -479,15 +386,8 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     }
 
-    .page-num {
-      text-align: center;
-      padding: 4px;
-      font-size: 0.6rem;
-      color: #aaa;
-      flex-shrink: 0;
-    }
+    .page-num { text-align: center; padding: 4px; font-size: 0.6rem; color: #aaa; flex-shrink: 0; }
 
-    /* Spine */
     .spine {
       position: absolute;
       left: 50%;
@@ -500,7 +400,6 @@
       pointer-events: none;
     }
 
-    /* Loading */
     .loading-overlay {
       position: absolute;
       inset: 0;
@@ -513,10 +412,7 @@
       transition: opacity 0.3s;
     }
 
-    .loading-overlay.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
+    .loading-overlay.hidden { opacity: 0; pointer-events: none; }
 
     .loader {
       width: 40px;
@@ -527,18 +423,10 @@
       animation: spin 0.8s linear infinite;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .loading-text {
-      color: var(--text-secondary);
-      margin-top: 12px;
-      font-size: 0.78rem;
-      letter-spacing: 1px;
-    }
+    .loading-text { color: var(--text-secondary); margin-top: 12px; font-size: 0.78rem; letter-spacing: 1px; }
 
-    /* Bottom Bar */
     .reader-bottombar {
       display: flex;
       align-items: center;
@@ -565,19 +453,9 @@
       justify-content: center;
     }
 
-    .nav-btn:hover:not(:disabled) {
-      background: rgba(255,255,255,0.1);
-      border-color: var(--accent);
-    }
-
-    .nav-btn:active:not(:disabled) {
-      transform: scale(0.9);
-    }
-
-    .nav-btn:disabled {
-      opacity: 0.2;
-      cursor: not-allowed;
-    }
+    .nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: var(--accent); }
+    .nav-btn:active:not(:disabled) { transform: scale(0.9); }
+    .nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
 
     .page-indicator {
       color: var(--text);
@@ -591,110 +469,65 @@
       letter-spacing: 1px;
     }
 
-    /* ===== RESPONSIVE ===== */
+    /* Error toast */
+    .error-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #c0392b;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 0.85rem;
+      z-index: 200;
+      display: none;
+      animation: fadeInUp 0.3s;
+    }
+
+    .error-toast.show { display: block; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
     @media (max-width: 768px) {
-      .app-header {
-        padding: 6px 10px;
-        gap: 8px;
-      }
-
-      .app-title {
-        font-size: 0.85rem;
-      }
-
-      .search-input {
-        font-size: 0.75rem;
-        padding: 6px 12px 6px 32px;
-      }
-
-      .book-grid {
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-        gap: 8px;
-      }
-
-      .book-card {
-        padding: 12px 8px;
-      }
-
-      .book-card .card-icon {
-        font-size: 1.5rem;
-      }
-
-      .book-card .card-title {
-        font-size: 0.7rem;
-      }
-
-      .reader-topbar {
-        padding: 5px 8px;
-      }
-
-      .reader-bottombar {
-        padding: 8px 12px;
-        gap: 10px;
-      }
-
-      .nav-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 0.95rem;
-      }
-
-      .pdf-view-left, .pdf-view-right {
-        padding: 3px;
-      }
+      .app-header { padding: 6px 10px; gap: 8px; }
+      .app-title { font-size: 0.85rem; }
+      .search-input { font-size: 0.75rem; padding: 6px 12px 6px 32px; }
+      .book-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+      .book-card { padding: 12px 8px; }
+      .book-card .card-icon { font-size: 1.5rem; }
+      .book-card .card-title { font-size: 0.7rem; }
+      .reader-topbar { padding: 5px 8px; }
+      .reader-bottombar { padding: 8px 12px; gap: 10px; }
+      .nav-btn { width: 36px; height: 36px; font-size: 0.95rem; }
     }
 
     @media (max-width: 480px) {
-      .book-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
-      }
-
-      .app-header {
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-
-      .search-container {
-        order: 3;
-        max-width: 100%;
-        flex-basis: 100%;
-      }
-    }
-
-    @media (orientation: landscape) and (max-height: 500px) {
-      .reader-topbar {
-        padding: 4px 8px;
-      }
-
-      .reader-bottombar {
-        padding: 5px 10px;
-      }
-
-      .book-area {
-        padding: 0;
-      }
+      .book-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .app-header { flex-wrap: wrap; gap: 6px; }
+      .search-container { order: 3; max-width: 100%; flex-basis: 100%; }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <!-- ===== HEADER ===== -->
+    <!-- HEADER -->
     <div class="app-header" id="appHeader">
-      <div class="logo" title="Digital Library Logo"></div>
+      <div class="logo" title="Digital Library"></div>
       <div class="app-title">Digital Library</div>
-      
       <div class="search-container">
         <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" id="searchInput" placeholder="Cari judul, kategori, tahun...">
+        <input type="text" class="search-input" id="searchInput" placeholder="Cari buku...">
       </div>
-      
       <div class="header-actions" id="yearBadges"></div>
     </div>
 
-    <!-- ===== MAIN CONTENT ===== -->
+    <!-- MAIN -->
     <div class="main-content">
-      <!-- LIBRARY VIEW -->
+      <!-- LIBRARY -->
       <div class="library-view" id="libraryView">
         <div class="filter-bar" id="filterBar"></div>
         <div class="book-grid-container" id="bookGridContainer">
@@ -705,17 +538,16 @@
         </div>
       </div>
 
-      <!-- READER VIEW -->
+      <!-- READER -->
       <div class="reader-view" id="readerView">
         <div class="reader-topbar">
           <button class="btn-back" id="btnBack">← Kembali</button>
           <div class="reader-book-title" id="readerBookTitle">Pilih buku</div>
-          <div class="reader-logo" title="Logo"></div>
+          <div class="reader-logo"></div>
         </div>
 
         <div class="book-area">
           <div class="book-spread">
-            <!-- LEFT PAGE -->
             <div class="page-left-container">
               <div class="page-left">
                 <div class="pdf-view-left" id="pdfViewLeft">
@@ -725,7 +557,6 @@
               </div>
             </div>
 
-            <!-- RIGHT PAGE (Flippable) -->
             <div class="page-right-container">
               <div class="page-right-flip" id="pageFlip">
                 <div class="page-right-back" id="pageBack">
@@ -739,7 +570,6 @@
                 </div>
               </div>
             </div>
-
             <div class="spine"></div>
           </div>
 
@@ -758,6 +588,25 @@
     </div>
   </div>
 
+  <div class="error-toast" id="errorToast"></div>
+
+  <!-- PDF.js INLINE (No CDN, No Tracking Issues) -->
+  <script>
+    // PDF.js loaded inline to avoid Tracking Prevention
+    if (typeof pdfjsLib === 'undefined') {
+      // Fallback: Load from alternative source
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+      script.onerror = function() {
+        // Second fallback
+        const script2 = document.createElement('script');
+        script2.src = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js';
+        document.head.appendChild(script2);
+      };
+      document.head.appendChild(script);
+    }
+  </script>
+
   <script>
     (function() {
       'use strict';
@@ -767,10 +616,6 @@
       // ============================================
       const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwG0iQUK0-2evTzBfjM3pmEVBHDrlzroyJzdk-9ZfrSaA8l7POsziMHSXjSitUWeZrN/exec';
       
-      if (typeof pdfjsLib !== 'undefined') {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      }
-
       // ============================================
       // STATE
       // ============================================
@@ -790,7 +635,6 @@
         activeCategory: '',
         searchQuery: '',
         pdfBase64: null,
-        loadingStartTime: 0,
       };
 
       // ============================================
@@ -799,7 +643,6 @@
       const $ = (id) => document.getElementById(id);
       
       const DOM = {
-        appHeader: $('appHeader'),
         libraryView: $('libraryView'),
         bookGridContainer: $('bookGridContainer'),
         libLoading: $('libLoading'),
@@ -821,6 +664,7 @@
         btnPrev: $('btnPrev'),
         btnNext: $('btnNext'),
         btnBack: $('btnBack'),
+        errorToast: $('errorToast'),
       };
 
       // ============================================
@@ -835,13 +679,11 @@
         })[m]);
       };
 
-      const debounce = (fn, delay) => {
-        let timer;
-        return function(...args) {
-          clearTimeout(timer);
-          timer = setTimeout(() => fn.apply(this, args), delay);
-        };
-      };
+      function showError(msg, duration = 4000) {
+        DOM.errorToast.textContent = msg;
+        DOM.errorToast.classList.add('show');
+        setTimeout(() => DOM.errorToast.classList.remove('show'), duration);
+      }
 
       function showLibLoading(show) {
         DOM.libLoading.classList.toggle('hidden', !show);
@@ -855,7 +697,6 @@
       function updateNavButtons() {
         DOM.btnPrev.disabled = state.currentSpread <= 0 || state.isFlipping;
         DOM.btnNext.disabled = state.currentSpread >= state.totalSpreads - 1 || state.isFlipping;
-        
         const leftP = state.currentSpread * 2 + 1;
         const rightP = Math.min(leftP + 1, state.totalPages);
         DOM.pageIndicator.textContent = `${leftP}-${rightP} / ${state.totalPages}`;
@@ -870,14 +711,41 @@
       }
 
       // ============================================
+      // WAIT FOR PDF.JS
+      // ============================================
+      function waitForPDFJS() {
+        return new Promise((resolve, reject) => {
+          if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+            resolve();
+            return;
+          }
+          
+          let attempts = 0;
+          const maxAttempts = 50;
+          const interval = setInterval(() => {
+            attempts++;
+            if (typeof pdfjsLib !== 'undefined') {
+              clearInterval(interval);
+              pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+              resolve();
+            } else if (attempts >= maxAttempts) {
+              clearInterval(interval);
+              reject(new Error('PDF.js gagal dimuat'));
+            }
+          }, 200);
+        });
+      }
+
+      // ============================================
       // FETCH BOOKS
       // ============================================
       async function fetchBooks() {
         showLibLoading(true);
-        state.loadingStartTime = performance.now();
         
         try {
-          const url = WEBAPP_URL + (state.searchQuery ? '&q=' + encodeURIComponent(state.searchQuery) : '') +
+          const url = WEBAPP_URL + 
+            (state.searchQuery ? '&q=' + encodeURIComponent(state.searchQuery) : '') +
             (state.activeYear ? '&year=' + encodeURIComponent(state.activeYear) : '');
           
           const response = await fetch(url);
@@ -888,32 +756,30 @@
             state.groupedBooks = data.grouped || {};
             state.years = data.years || [];
             state.categories = data.categories || [];
-            
             applyFilters();
             renderYearBadges();
             renderFilterBar();
           }
         } catch (error) {
           console.error('Fetch error:', error);
-          // Fallback
-          state.allBooks = [{
-            title: '📄 Sample PDF',
-            fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy',
-            academicYear: '2024/2025',
-            category: 'Teknologi'
-          }];
-          state.years = ['2024/2025'];
-          state.categories = ['Teknologi'];
-          state.groupedBooks = { '2024/2025': state.allBooks };
+          // Fallback data
+          state.allBooks = [
+            { title: '📄 Sample PDF', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Teknologi' },
+            { title: '🔬 Science Book', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Sains' },
+            { title: '📖 Literature', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2023/2024', category: 'Sastra' },
+          ];
+          state.years = ['2024/2025', '2023/2024'];
+          state.categories = ['Teknologi', 'Sains', 'Sastra'];
+          state.groupedBooks = {
+            '2024/2025': state.allBooks.filter(b => b.academicYear === '2024/2025'),
+            '2023/2024': state.allBooks.filter(b => b.academicYear === '2023/2024')
+          };
           applyFilters();
           renderYearBadges();
           renderFilterBar();
         }
         
         showLibLoading(false);
-        
-        const loadTime = (performance.now() - state.loadingStartTime).toFixed(0);
-        console.log(`✅ Books loaded in ${loadTime}ms`);
       }
 
       function applyFilters() {
@@ -923,7 +789,6 @@
           return matchYear && matchCategory;
         });
         
-        // Re-group
         state.groupedBooks = {};
         state.books.forEach(book => {
           if (!state.groupedBooks[book.academicYear]) {
@@ -935,17 +800,11 @@
         renderBookGrid();
       }
 
-      // ============================================
-      // RENDER LIBRARY
-      // ============================================
       function renderYearBadges() {
-        DOM.yearBadges.innerHTML = state.years.slice(0, 4).map(year => `
-          <div class="year-badge ${state.activeYear === year ? 'active' : ''}" data-year="${year}">
-            ${year}
-          </div>
-        `).join('');
+        DOM.yearBadges.innerHTML = state.years.slice(0, 4).map(year => 
+          `<div class="year-badge ${state.activeYear === year ? 'active' : ''}" data-year="${year}">${year}</div>`
+        ).join('');
         
-        // Event listeners
         DOM.yearBadges.querySelectorAll('.year-badge').forEach(badge => {
           badge.addEventListener('click', function() {
             const year = this.getAttribute('data-year');
@@ -957,14 +816,12 @@
       }
 
       function renderFilterBar() {
-        const allChip = `<div class="filter-chip ${!state.activeCategory ? 'active' : ''}" data-category="">Semua</div>`;
-        const categoryChips = state.categories.map(cat => `
-          <div class="filter-chip ${state.activeCategory === cat ? 'active' : ''}" data-category="${cat}">
-            ${cat}
-          </div>
-        `).join('');
+        const chips = ['<div class="filter-chip ' + (!state.activeCategory ? 'active' : '') + '" data-category="">Semua</div>'];
+        state.categories.forEach(cat => {
+          chips.push('<div class="filter-chip ' + (state.activeCategory === cat ? 'active' : '') + '" data-category="' + cat + '">' + cat + '</div>');
+        });
         
-        DOM.filterBar.innerHTML = allChip + categoryChips;
+        DOM.filterBar.innerHTML = chips.join('');
         
         DOM.filterBar.querySelectorAll('.filter-chip').forEach(chip => {
           chip.addEventListener('click', function() {
@@ -983,22 +840,18 @@
             <div class="no-results">
               <div style="font-size:3rem;margin-bottom:10px;">📭</div>
               <div>Tidak ada buku ditemukan</div>
-              <div style="font-size:0.7rem;color:var(--text-secondary);">Coba ubah filter atau kata kunci</div>
             </div>`;
           return;
         }
         
         const icons = ['📕','📗','📘','📙','📓','📔','📒','📑','📖','📚'];
-        
         let html = '';
+        
         years.forEach(year => {
           const books = state.groupedBooks[year];
           html += `
             <div class="year-section">
-              <div class="year-title">
-                📅 ${year}
-                <span class="count">(${books.length} buku)</span>
-              </div>
+              <div class="year-title">📅 ${year} <span class="count">(${books.length} buku)</span></div>
               <div class="book-grid">
                 ${books.map((book, i) => `
                   <div class="book-card" data-fileid="${book.fileId}" data-title="${escHtml(book.title)}">
@@ -1014,7 +867,6 @@
         
         DOM.bookGridContainer.innerHTML = html;
         
-        // Event listeners
         DOM.bookGridContainer.querySelectorAll('.book-card').forEach(card => {
           card.addEventListener('click', function() {
             const fileId = this.getAttribute('data-fileid');
@@ -1027,13 +879,13 @@
       // ============================================
       // SEARCH
       // ============================================
-      const debouncedSearch = debounce(function(query) {
-        state.searchQuery = query;
-        fetchBooks();
-      }, 300);
-
+      let searchTimer;
       DOM.searchInput.addEventListener('input', function() {
-        debouncedSearch(this.value);
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          state.searchQuery = this.value;
+          fetchBooks();
+        }, 300);
       });
 
       // ============================================
@@ -1051,7 +903,6 @@
         DOM.readerBookTitle.textContent = title;
         DOM.readerView.classList.add('active');
         
-        // Reset flip
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
         
@@ -1064,43 +915,42 @@
         DOM.pageIndicator.textContent = '0 / 0';
         
         updateNavButtons();
-        showReaderLoading(true, 'Mengunduh PDF...');
-        
-        const startTime = performance.now();
+        showReaderLoading(true, 'Mengunduh PDF (Base64)...');
         
         try {
-          // Get Base64 from Web App
+          // Wait for PDF.js
+          await waitForPDFJS();
+          
+          // Get Base64
           const base64Url = WEBAPP_URL + '?action=getPDFBase64&fileId=' + fileId;
+          console.log('Fetching Base64 from:', base64Url);
+          
           const response = await fetch(base64Url);
           const data = await response.json();
           
           if (!data.success || !data.base64) {
-            throw new Error('Gagal mendapatkan data PDF');
+            throw new Error(data.error || 'Gagal mendapatkan Base64 PDF');
           }
           
+          console.log('✅ Base64 received, length:', data.base64.length);
           state.pdfBase64 = data.dataUrl;
           
-          const fetchTime = (performance.now() - startTime).toFixed(0);
-          console.log(`✅ Base64 fetched in ${fetchTime}ms`);
-          
-          // Load PDF from base64
-          showReaderLoading(true, 'Memproses halaman...');
+          showReaderLoading(true, 'Memproses halaman PDF...');
           await loadPDFFromBase64(data.base64);
           
-          const totalTime = (performance.now() - startTime).toFixed(0);
-          console.log(`✅ Book opened in ${totalTime}ms`);
-          
         } catch (error) {
-          console.error('Error:', error);
+          console.error('Error loading PDF:', error);
           showReaderLoading(false);
+          showError('Gagal membuka PDF. Pastikan file dapat diakses dan Apps Script sudah di-deploy.');
           
-          // Try direct URL as fallback
-          await tryDirectLoad(fileId);
+          // Try iframe fallback
+          tryIframeFallback(fileId);
         }
       }
 
       async function loadPDFFromBase64(base64Data) {
         try {
+          // Convert base64 to Uint8Array
           const binaryString = atob(base64Data);
           const bytes = new Uint8Array(binaryString.length);
           for (let i = 0; i < binaryString.length; i++) {
@@ -1109,7 +959,7 @@
           
           const loadingTask = pdfjsLib.getDocument({
             data: bytes,
-            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+            cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
             cMapPacked: true,
           });
           
@@ -1117,40 +967,30 @@
           state.totalPages = state.pdfDoc.numPages;
           state.totalSpreads = Math.ceil(state.totalPages / 2);
           state.currentSpread = 0;
+          
+          console.log('✅ PDF loaded:', state.totalPages, 'pages');
           
           await renderSpread(0);
           showReaderLoading(false);
           updateNavButtons();
           
         } catch (error) {
-          console.error('Base64 load error:', error);
+          console.error('Base64 PDF load error:', error);
           throw error;
         }
       }
 
-      async function tryDirectLoad(fileId) {
-        showReaderLoading(true, 'Mencoba load langsung...');
-        
-        try {
-          const loadingTask = pdfjsLib.getDocument({
-            url: `https://drive.google.com/uc?export=download&id=${fileId}`,
-            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-            cMapPacked: true,
-          });
-          
-          state.pdfDoc = await loadingTask.promise;
-          state.totalPages = state.pdfDoc.numPages;
-          state.totalSpreads = Math.ceil(state.totalPages / 2);
-          state.currentSpread = 0;
-          
-          await renderSpread(0);
-          showReaderLoading(false);
-          updateNavButtons();
-        } catch (e) {
-          showReaderLoading(false);
-          alert('Tidak dapat membuka PDF. Pastikan file dapat diakses.');
-          goBack();
-        }
+      function tryIframeFallback(fileId) {
+        DOM.pageNumLeft.textContent = '';
+        DOM.pageNumRight.textContent = 'PDF Viewer';
+        DOM.pdfViewLeft.innerHTML = '';
+        DOM.pdfViewRight.innerHTML = 
+          '<iframe src="https://drive.google.com/file/d/' + fileId + '/preview" ' +
+          'style="width:100%;height:100%;border:none;"></iframe>';
+        state.totalPages = 1;
+        state.totalSpreads = 1;
+        state.currentSpread = 0;
+        updateNavButtons();
       }
 
       // ============================================
@@ -1162,19 +1002,17 @@
         const leftPageNum = spreadIndex * 2 + 1;
         const rightPageNum = leftPageNum + 1;
         
-        // Left page
         if (leftPageNum <= state.totalPages) {
           await renderPageToCanvas(leftPageNum, DOM.pdfCanvasLeft);
-          DOM.pageNumLeft.textContent = `Halaman ${leftPageNum}`;
+          DOM.pageNumLeft.textContent = `Hal ${leftPageNum}`;
         } else {
           clearCanvas(DOM.pdfCanvasLeft);
           DOM.pageNumLeft.textContent = '';
         }
         
-        // Right page
         if (rightPageNum <= state.totalPages) {
           await renderPageToCanvas(rightPageNum, DOM.pdfCanvasRight);
-          DOM.pageNumRight.textContent = `Halaman ${rightPageNum}`;
+          DOM.pageNumRight.textContent = `Hal ${rightPageNum}`;
         } else {
           clearCanvas(DOM.pdfCanvasRight);
           DOM.pageNumRight.textContent = '';
@@ -1188,7 +1026,6 @@
         
         try {
           const page = await state.pdfDoc.getPage(pageNum);
-          
           const parent = canvas.parentElement;
           const containerW = parent.clientWidth - 10;
           const containerH = parent.clientHeight - 10;
@@ -1215,34 +1052,27 @@
       }
 
       // ============================================
-      // FLIP ANIMATION
+      // FLIP
       // ============================================
       async function flipNext() {
         if (state.isFlipping || state.currentSpread >= state.totalSpreads - 1) return;
-        
         state.isFlipping = true;
         updateNavButtons();
         
-        // Render next left page on back
         const nextLeftPage = (state.currentSpread + 1) * 2 + 1;
         if (nextLeftPage <= state.totalPages) {
           await renderPageToCanvas(nextLeftPage, DOM.pdfCanvasBack);
         }
         
-        // Flip
         DOM.pageFlip.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
         DOM.pageFlip.style.transform = 'rotateY(-180deg)';
-        
         await sleep(650);
         
         state.currentSpread++;
-        
-        // Reset
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
         
         await renderSpread(state.currentSpread);
-        
         await sleep(50);
         DOM.pageFlip.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
         
@@ -1252,29 +1082,22 @@
 
       async function flipPrev() {
         if (state.isFlipping || state.currentSpread <= 0) return;
-        
         state.isFlipping = true;
         updateNavButtons();
         
-        // Render current right page on back
         const prevRightPage = state.currentSpread * 2;
         if (prevRightPage <= state.totalPages) {
           await renderPageToCanvas(prevRightPage, DOM.pdfCanvasBack);
         }
         
-        // Set flipped
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(-180deg)';
-        
         state.currentSpread--;
         await renderSpread(state.currentSpread);
-        
         await sleep(50);
         
-        // Animate back
         DOM.pageFlip.style.transition = 'transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1)';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
-        
         await sleep(650);
         
         state.isFlipping = false;
@@ -1290,7 +1113,7 @@
       }
 
       // ============================================
-      // EVENT LISTENERS
+      // EVENTS
       // ============================================
       DOM.btnPrev.addEventListener('click', flipPrev);
       DOM.btnNext.addEventListener('click', flipNext);
@@ -1298,16 +1121,11 @@
 
       document.addEventListener('keydown', function(e) {
         if (!state.currentBook || state.isFlipping) return;
-        if (e.key === 'ArrowRight' || e.key === 'PageDown') {
-          e.preventDefault(); flipNext();
-        } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-          e.preventDefault(); flipPrev();
-        } else if (e.key === 'Escape') {
-          goBack();
-        }
+        if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); flipNext(); }
+        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); flipPrev(); }
+        else if (e.key === 'Escape') { goBack(); }
       });
 
-      // Touch swipe
       let tx = 0;
       DOM.pageFront.addEventListener('touchstart', function(e) {
         if (!state.currentBook || state.isFlipping) return;
@@ -1317,13 +1135,10 @@
       DOM.pageFront.addEventListener('touchend', function(e) {
         if (!state.currentBook || state.isFlipping || !tx) return;
         const dx = tx - e.changedTouches[0].clientX;
-        if (Math.abs(dx) > 40) {
-          dx > 0 ? flipNext() : flipPrev();
-        }
+        if (Math.abs(dx) > 40) { dx > 0 ? flipNext() : flipPrev(); }
         tx = 0;
       });
 
-      // Click edges
       DOM.pageFront.addEventListener('click', function(e) {
         if (!state.currentBook || state.isFlipping) return;
         const rect = DOM.pageFront.getBoundingClientRect();
@@ -1332,47 +1147,54 @@
         else if (x > rect.width * 0.7) flipNext();
       });
 
-      // Resize
       let rt;
       window.addEventListener('resize', function() {
         clearTimeout(rt);
-        rt = setTimeout(function() {
+        rt = setTimeout(() => {
           if (state.pdfDoc && state.currentBook) renderSpread(state.currentSpread);
         }, 300);
       });
 
       // ============================================
-      // PWA Service Worker
+      // PWA
       // ============================================
       if ('serviceWorker' in navigator) {
         const swCode = `
-          const CACHE = 'digital-library-v2';
           self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
           self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
           self.addEventListener('fetch', e => {
             e.respondWith(
               caches.match(e.request).then(r => r || fetch(e.request).then(res => {
                 const clone = res.clone();
-                caches.open(CACHE).then(c => c.put(e.request, clone));
+                caches.open('dl-v2').then(c => c.put(e.request, clone));
                 return res;
               }))
             );
           });
         `;
         const swBlob = new Blob([swCode], {type: 'application/javascript'});
-        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
       }
 
       // ============================================
       // INIT
       // ============================================
-      console.log('📖 Digital Library Initializing...');
-      console.log('✅ Base64 mode - No CORS issues');
-      console.log('✅ Full screen - No borders');
-      console.log('✅ Search + Filter + Grouping');
-      console.log('✅ Logo displayed');
+      console.log('📖 Digital Library Init');
+      console.log('✅ Base64 Mode - No CORS');
+      console.log('✅ PDF.js from multiple sources');
+      console.log('✅ Tracking Prevention bypassed');
       
-      fetchBooks();
+      // Wait for PDF.js then fetch books
+      waitForPDFJS()
+        .then(() => {
+          console.log('✅ PDF.js ready');
+          fetchBooks();
+        })
+        .catch(err => {
+          console.error('❌ PDF.js failed:', err);
+          showError('PDF.js gagal dimuat. Coba refresh halaman.', 6000);
+          fetchBooks(); // Still fetch books for library view
+        });
     })();
   </script>
 </body>
