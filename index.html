@@ -3,27 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  
-  <!-- PWA Meta Tags -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Digital Library">
   <meta name="theme-color" content="#0a0a0a">
   <meta name="description" content="Digital Library - E-Book Flip Reader with Real-time Sync">
+  <title>📖 Digital Library | Live Sync</title>
   
-  <!-- PWA Icons -->
   <link rel="icon" href="https://i.imgur.com/JkxRYd6.png">
   <link rel="apple-touch-icon" href="https://i.imgur.com/JkxRYd6.png">
   <link rel="apple-touch-icon" sizes="192x192" href="https://i.imgur.com/JkxRYd6.png">
   <link rel="apple-touch-icon" sizes="512x512" href="https://i.imgur.com/JkxRYd6.png">
   
-  <title>📖 Digital Library | Live Sync</title>
-  
-  <!-- PWA Manifest -->
   <script>
     // Dynamic Manifest
-    const manifest = {
+    var manifestData = {
       name: 'Digital Library - E-Book Reader',
       short_name: 'Digital Library',
       description: 'E-Book Flip Reader with Real-time Spreadsheet Sync',
@@ -33,37 +28,26 @@
       background_color: '#0a0a0a',
       theme_color: '#0a0a0a',
       icons: [
-        {
-          src: 'https://i.imgur.com/JkxRYd6.png',
-          sizes: '192x192',
-          type: 'image/png',
-          purpose: 'any maskable'
-        },
-        {
-          src: 'https://i.imgur.com/JkxRYd6.png',
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'any maskable'
-        }
+        { src: 'https://i.imgur.com/JkxRYd6.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+        { src: 'https://i.imgur.com/JkxRYd6.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
       ],
       categories: ['books', 'education', 'productivity'],
       lang: 'id-ID',
       dir: 'ltr'
     };
     
-    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-    const manifestUrl = URL.createObjectURL(manifestBlob);
-    
-    const link = document.createElement('link');
-    link.rel = 'manifest';
-    link.href = manifestUrl;
-    document.head.appendChild(link);
+    var manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+    var manifestUrl = URL.createObjectURL(manifestBlob);
+    var manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = manifestUrl;
+    document.head.appendChild(manifestLink);
   </script>
   
-  <!-- PDF.js -->
   <script>
+    // PDF.js loader
     (function() {
-      const script = document.createElement('script');
+      var script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
       script.async = true;
       script.onload = function() {
@@ -73,12 +57,14 @@
         }
       };
       script.onerror = function() {
-        const s2 = document.createElement('script');
+        console.warn('⚠️ jsdelivr failed, trying unpkg...');
+        var s2 = document.createElement('script');
         s2.src = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js';
         s2.async = true;
         s2.onload = function() {
           if (typeof pdfjsLib !== 'undefined') {
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+            console.log('✅ PDF.js loaded from unpkg');
           }
         };
         document.head.appendChild(s2);
@@ -100,8 +86,6 @@
       --warning: #f39c12;
       --danger: #e74c3c;
       --info: #3498db;
-      
-      /* Safe area insets */
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --safe-left: env(safe-area-inset-left, 0px);
@@ -121,842 +105,292 @@
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
       touch-action: pan-y;
-      
-      /* Safe area */
       padding-top: var(--safe-top);
       padding-bottom: var(--safe-bottom);
       padding-left: var(--safe-left);
       padding-right: var(--safe-right);
     }
 
-    .app { 
-      width: 100%; 
-      height: 100%; 
-      display: flex; 
-      flex-direction: column; 
-      position: relative;
-    }
+    .app { width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-    /* ===== OFFLINE BANNER ===== */
     .offline-banner {
       display: none;
       background: var(--warning);
       color: #1a1a1a;
       text-align: center;
-      padding: 4px;
-      font-size: 0.65rem;
+      padding: 3px 8px;
+      font-size: 0.62rem;
       font-weight: 600;
       letter-spacing: 0.5px;
       flex-shrink: 0;
     }
     .offline-banner.show { display: block; }
 
-    /* ===== HEADER ===== */
     .app-header {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 12px;
+      padding: 6px 12px;
       background: rgba(10,10,10,0.95);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(255,255,255,0.06);
       z-index: 100;
       flex-shrink: 0;
-      min-height: 48px;
+      min-height: 46px;
     }
 
-    .logo { 
-      width: 32px; 
-      height: 32px; 
-      border-radius: 8px; 
-      background: url('https://i.imgur.com/JkxRYd6.png') center/contain no-repeat; 
+    .logo {
+      width: 30px; height: 30px;
+      border-radius: 6px;
+      background: url('https://i.imgur.com/JkxRYd6.png') center/contain no-repeat;
       flex-shrink: 0;
       box-shadow: 0 2px 8px rgba(201,168,124,0.3);
     }
-    
-    .app-title { 
-      color: var(--text); 
-      font-size: 0.95rem; 
-      font-weight: 600; 
-      white-space: nowrap;
-      letter-spacing: 0.5px;
-    }
+    .app-title { color: var(--text); font-size: 0.9rem; font-weight: 600; white-space: nowrap; letter-spacing: 0.5px; }
 
-    /* ===== SYNC INDICATOR ===== */
-    .sync-container {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
-    }
+    .sync-container { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
     .sync-indicator {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.62rem;
-      padding: 4px 10px;
-      border-radius: 14px;
-      white-space: nowrap;
-      transition: all 0.3s ease;
-      cursor: pointer;
-      border: 1px solid transparent;
-    }
-
-    .sync-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
+      display: flex; align-items: center; gap: 5px;
+      font-size: 0.6rem; padding: 3px 10px; border-radius: 12px;
+      white-space: nowrap; cursor: pointer; border: 1px solid transparent;
       transition: all 0.3s ease;
     }
+    .sync-dot { width: 5px; height: 5px; border-radius: 50%; transition: all 0.3s ease; }
 
-    .sync-indicator.live {
-      background: rgba(39,174,96,0.12);
-      border-color: rgba(39,174,96,0.25);
-      color: var(--success);
-    }
-    .sync-indicator.live .sync-dot {
-      background: var(--success);
-      animation: livePulse 2s infinite;
-      box-shadow: 0 0 6px rgba(39,174,96,0.5);
-    }
+    .sync-indicator.live { background: rgba(39,174,96,0.12); border-color: rgba(39,174,96,0.25); color: var(--success); }
+    .sync-indicator.live .sync-dot { background: var(--success); animation: livePulse 2s infinite; box-shadow: 0 0 6px rgba(39,174,96,0.5); }
+    .sync-indicator.updating { background: rgba(241,196,15,0.12); border-color: rgba(241,196,15,0.25); color: var(--warning); }
+    .sync-indicator.updating .sync-dot { background: var(--warning); animation: spin 0.8s linear infinite; }
+    .sync-indicator.offline { background: rgba(231,76,60,0.12); border-color: rgba(231,76,60,0.25); color: var(--danger); }
+    .sync-indicator.offline .sync-dot { background: var(--danger); }
 
-    .sync-indicator.updating {
-      background: rgba(241,196,15,0.12);
-      border-color: rgba(241,196,15,0.25);
-      color: var(--warning);
-    }
-    .sync-indicator.updating .sync-dot {
-      background: var(--warning);
-      animation: spin 0.8s linear infinite;
-    }
+    @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .sync-indicator.offline {
-      background: rgba(231,76,60,0.12);
-      border-color: rgba(231,76,60,0.25);
-      color: var(--danger);
-    }
-    .sync-indicator.offline .sync-dot {
-      background: var(--danger);
-    }
-
-    @keyframes livePulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.7); }
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .sync-time {
-      font-size: 0.55rem;
-      color: var(--text-secondary);
-      white-space: nowrap;
-      display: none;
-    }
-
-    @media (min-width: 600px) {
-      .sync-time { display: inline; }
-    }
+    .sync-time { font-size: 0.55rem; color: var(--text-secondary); white-space: nowrap; }
 
     .auto-refresh-badge {
-      font-size: 0.5rem;
-      padding: 2px 7px;
-      border-radius: 8px;
-      background: rgba(52,152,219,0.15);
-      color: var(--info);
-      border: 1px solid rgba(52,152,219,0.2);
-      white-space: nowrap;
-      animation: fadeInOut 3s ease-in-out;
-      display: none;
+      font-size: 0.5rem; padding: 2px 7px; border-radius: 8px;
+      background: rgba(52,152,219,0.15); color: var(--info);
+      border: 1px solid rgba(52,152,219,0.2); white-space: nowrap;
+      animation: fadeInOut 3s ease-in-out; display: none;
     }
+    @keyframes fadeInOut { 0%{opacity:0;transform:scale(0.8)} 15%{opacity:1;transform:scale(1)} 85%{opacity:1} 100%{opacity:0} }
 
-    @keyframes fadeInOut {
-      0% { opacity: 0; transform: scale(0.8); }
-      15% { opacity: 1; transform: scale(1); }
-      85% { opacity: 1; }
-      100% { opacity: 0; }
+    .search-wrapper { flex: 1; position: relative; max-width: 350px; margin: 0 8px; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; pointer-events: none; z-index: 1; color: var(--text-secondary); }
+    .search-input {
+      width: 100%; padding: 7px 14px 7px 32px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px; color: var(--text); font-size: 0.78rem;
+      outline: none; font-family: inherit; transition: all 0.3s;
     }
-
-    /* ===== SEARCH ===== */
-    .search-wrapper { 
-      flex: 1; 
-      position: relative; 
-      max-width: 350px; 
-      margin: 0 8px;
-    }
-    
-    .search-icon { 
-      position: absolute; 
-      left: 10px; 
-      top: 50%; 
-      transform: translateY(-50%); 
-      font-size: 0.8rem; 
-      pointer-events: none; 
-      z-index: 1;
-      color: var(--text-secondary);
-    }
-    
-    .search-input { 
-      width: 100%; 
-      padding: 7px 14px 7px 32px; 
-      background: rgba(255,255,255,0.05); 
-      border: 1px solid rgba(255,255,255,0.08); 
-      border-radius: 18px; 
-      color: var(--text); 
-      font-size: 0.78rem; 
-      outline: none; 
-      font-family: inherit;
-      transition: all 0.3s;
-    }
-    
-    .search-input:focus { 
-      border-color: var(--accent);
-      background: rgba(255,255,255,0.08);
-    }
-    
+    .search-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.08); }
     .search-input::placeholder { color: var(--text-secondary); }
 
-    .header-actions { 
-      display: flex; 
-      gap: 4px; 
-      flex-shrink: 0;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
+    .header-actions { display: flex; gap: 4px; flex-shrink: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .header-actions::-webkit-scrollbar { height: 0; }
-    
-    .year-pill { 
-      padding: 5px 10px; 
-      border-radius: 14px; 
-      background: rgba(201,168,124,0.1); 
-      color: var(--accent); 
-      font-size: 0.65rem; 
-      font-weight: 600; 
-      cursor: pointer; 
-      border: 1px solid rgba(201,168,124,0.2); 
-      white-space: nowrap; 
-      font-family: inherit;
-      transition: all 0.2s;
+
+    .year-pill {
+      padding: 5px 10px; border-radius: 14px;
+      background: rgba(201,168,124,0.1); color: var(--accent);
+      font-size: 0.65rem; font-weight: 600; cursor: pointer;
+      border: 1px solid rgba(201,168,124,0.2); white-space: nowrap;
+      font-family: inherit; transition: all 0.2s;
     }
     .year-pill:hover { background: rgba(201,168,124,0.2); }
     .year-pill.active { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
 
-    .refresh-btn { 
-      background: rgba(255,255,255,0.06); 
-      border: 1px solid rgba(255,255,255,0.1); 
-      color: var(--text); 
-      padding: 5px 10px; 
-      border-radius: 12px; 
-      cursor: pointer; 
-      font-size: 0.7rem; 
-      font-family: inherit;
-      transition: all 0.2s;
-      flex-shrink: 0;
+    .refresh-btn {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text); padding: 5px 10px; border-radius: 12px;
+      cursor: pointer; font-size: 0.7rem; font-family: inherit;
+      transition: all 0.2s; flex-shrink: 0;
     }
     .refresh-btn:hover { background: rgba(255,255,255,0.12); }
     .refresh-btn.spinning { animation: spin 0.8s linear; }
 
-    /* ===== MAIN CONTENT ===== */
-    .main-content { 
-      flex: 1; 
-      position: relative; 
-      overflow: hidden; 
-    }
+    .main-content { flex: 1; position: relative; overflow: hidden; }
 
-    /* ===== LIBRARY ===== */
-    .library-view { 
-      position: absolute; 
-      inset: 0; 
-      display: flex; 
-      flex-direction: column; 
-      transition: all 0.3s cubic-bezier(0.4,0,0.2,1); 
-    }
-    .library-view.hidden { 
-      opacity: 0; 
-      transform: scale(0.98); 
-      pointer-events: none; 
-    }
+    .library-view { position: absolute; inset: 0; display: flex; flex-direction: column; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); }
+    .library-view.hidden { opacity: 0; transform: scale(0.98); pointer-events: none; }
 
-    .filter-row { 
-      display: flex; 
-      gap: 5px; 
-      padding: 8px 14px; 
-      overflow-x: auto; 
-      flex-shrink: 0;
-      -webkit-overflow-scrolling: touch;
-    }
+    .filter-row { display: flex; gap: 5px; padding: 8px 14px; overflow-x: auto; flex-shrink: 0; -webkit-overflow-scrolling: touch; }
     .filter-row::-webkit-scrollbar { height: 0; }
-    
-    .filter-chip { 
-      padding: 5px 12px; 
-      border-radius: 16px; 
-      background: rgba(255,255,255,0.04); 
-      border: 1px solid rgba(255,255,255,0.05); 
-      color: var(--text-secondary); 
-      font-size: 0.68rem; 
-      white-space: nowrap; 
-      cursor: pointer; 
-      font-family: inherit;
-      transition: all 0.2s;
+
+    .filter-chip {
+      padding: 5px 12px; border-radius: 16px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.05);
+      color: var(--text-secondary); font-size: 0.68rem; white-space: nowrap;
+      cursor: pointer; font-family: inherit; transition: all 0.2s;
     }
     .filter-chip:hover { background: rgba(255,255,255,0.08); color: var(--text); }
-    .filter-chip.active { 
-      background: var(--accent); 
-      color: #1a1a1a; 
-      border-color: var(--accent); 
-      font-weight: 600; 
-    }
+    .filter-chip.active { background: var(--accent); color: #1a1a1a; border-color: var(--accent); font-weight: 600; }
 
-    .book-scroll { 
-      flex: 1; 
-      overflow-y: auto; 
-      padding: 0 14px 14px;
-      -webkit-overflow-scrolling: touch;
-      scroll-behavior: smooth;
-    }
+    .book-scroll { flex: 1; overflow-y: auto; padding: 0 14px 14px; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
     .book-scroll::-webkit-scrollbar { width: 4px; }
     .book-scroll::-webkit-scrollbar-track { background: transparent; }
     .book-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
 
     .year-group { margin-bottom: 16px; }
-    
-    .year-group-header { 
-      color: var(--accent); 
-      font-size: 0.75rem; 
-      font-weight: 700; 
-      letter-spacing: 1.5px; 
-      padding: 10px 4px 6px; 
-      text-transform: uppercase; 
-      border-bottom: 1px solid rgba(255,255,255,0.04); 
-      margin-bottom: 8px; 
-      display: flex; 
-      align-items: center;
-      justify-content: space-between; 
-      position: sticky; 
-      top: 0; 
-      background: rgba(10,10,10,0.9); 
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      z-index: 5; 
-    }
-    
-    .year-group-header .book-count { 
-      font-size: 0.62rem; 
-      color: var(--text-secondary); 
-      font-weight: 400; 
-    }
 
-    .book-grid { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); 
-      gap: 8px; 
+    .year-group-header {
+      color: var(--accent); font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 1.5px; padding: 10px 4px 6px; text-transform: uppercase;
+      border-bottom: 1px solid rgba(255,255,255,0.04); margin-bottom: 8px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0;
+      background: rgba(10,10,10,0.9); backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px); z-index: 5;
     }
-    
-    .book-card { 
-      background: var(--surface); 
-      border-radius: 10px; 
-      padding: 12px 10px; 
-      cursor: pointer; 
-      transition: all 0.25s ease; 
-      text-align: center; 
-      border: 1px solid transparent; 
-      position: relative;
-      overflow: hidden;
+    .year-group-header .book-count { font-size: 0.62rem; color: var(--text-secondary); font-weight: 400; }
+
+    .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 8px; }
+
+    .book-card {
+      background: var(--surface); border-radius: 10px; padding: 12px 10px;
+      cursor: pointer; transition: all 0.25s ease; text-align: center;
+      border: 1px solid transparent; position: relative; overflow: hidden;
     }
-    .book-card:hover { 
-      border-color: rgba(201,168,124,0.3); 
-      transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-    }
+    .book-card:hover { border-color: rgba(201,168,124,0.3); transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
     .book-card:active { transform: scale(0.97); }
-    
-    .book-card .card-emoji { 
-      font-size: 1.6rem; 
-      margin-bottom: 6px;
-      transition: transform 0.2s;
-    }
+    .book-card .card-emoji { font-size: 1.6rem; margin-bottom: 6px; transition: transform 0.2s; }
     .book-card:hover .card-emoji { transform: scale(1.1); }
-    
-    .book-card .card-title { 
-      color: var(--text); 
-      font-size: 0.7rem; 
-      font-weight: 600; 
-      line-height: 1.3; 
-      display: -webkit-box; 
-      -webkit-line-clamp: 2; 
-      -webkit-box-orient: vertical; 
-      overflow: hidden;
-      margin-bottom: 3px;
+    .book-card .card-title {
+      color: var(--text); font-size: 0.7rem; font-weight: 600; line-height: 1.3;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 3px;
     }
-    
-    .book-card .card-url { 
-      color: var(--text-secondary); 
-      font-size: 0.55rem; 
-      word-break: break-all; 
-      display: -webkit-box; 
-      -webkit-line-clamp: 1; 
-      -webkit-box-orient: vertical; 
-      overflow: hidden;
-      font-family: monospace;
+    .book-card .card-url {
+      color: var(--text-secondary); font-size: 0.55rem; word-break: break-all;
+      font-family: monospace; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
     }
-    
-    .book-card .card-badge { 
-      position: absolute; 
-      top: 6px; 
-      right: 6px; 
-      font-size: 0.5rem; 
-      background: rgba(201,168,124,0.2); 
-      color: var(--accent); 
-      padding: 2px 6px; 
-      border-radius: 8px;
-      font-weight: 600;
+    .book-card .card-badge {
+      position: absolute; top: 6px; right: 6px; font-size: 0.5rem;
+      background: rgba(201,168,124,0.2); color: var(--accent);
+      padding: 2px 6px; border-radius: 8px; font-weight: 600;
     }
 
-    .empty-state { 
-      text-align: center; 
-      padding: 50px 20px; 
-      color: var(--text-secondary);
-    }
+    .empty-state { text-align: center; padding: 50px 20px; color: var(--text-secondary); }
     .empty-state .empty-icon { font-size: 3.5rem; margin-bottom: 10px; }
     .empty-state .empty-text { font-size: 0.9rem; margin-bottom: 4px; }
     .empty-state .empty-sub { font-size: 0.7rem; }
 
-    /* ===== READER ===== */
-    .reader-view { 
-      position: absolute; 
-      inset: 0; 
-      background: #000; 
-      display: flex; 
-      flex-direction: column; 
-      transform: translateX(105%); 
-      transition: transform 0.4s cubic-bezier(0.4,0,0.2,1); 
-      z-index: 50; 
-    }
+    .reader-view { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; transform: translateX(105%); transition: transform 0.4s cubic-bezier(0.4,0,0.2,1); z-index: 50; }
     .reader-view.active { transform: translateX(0); }
 
-    .reader-topbar { 
-      display: flex; 
-      align-items: center; 
-      gap: 8px; 
-      padding: 6px 10px; 
-      background: rgba(0,0,0,0.9);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      z-index: 60; 
-      flex-shrink: 0;
-      min-height: 42px;
+    .reader-topbar {
+      display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+      background: rgba(0,0,0,0.9); backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px); z-index: 60; flex-shrink: 0; min-height: 42px;
     }
-    
-    .btn-back { 
-      background: rgba(255,255,255,0.08); 
-      border: 1px solid rgba(255,255,255,0.1); 
-      color: var(--text); 
-      padding: 5px 12px; 
-      border-radius: 14px; 
-      cursor: pointer; 
-      font-size: 0.72rem; 
-      font-family: inherit; 
-      display: flex; 
-      align-items: center; 
-      gap: 4px;
-      transition: all 0.2s;
-      white-space: nowrap;
+
+    .btn-back {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text); padding: 5px 12px; border-radius: 14px;
+      cursor: pointer; font-size: 0.72rem; font-family: inherit;
+      display: flex; align-items: center; gap: 4px; transition: all 0.2s; white-space: nowrap;
     }
     .btn-back:hover { background: rgba(255,255,255,0.14); }
-    
-    .reader-title { 
-      flex: 1; 
-      color: var(--text); 
-      font-size: 0.74rem; 
-      text-align: center; 
-      overflow: hidden; 
-      text-overflow: ellipsis; 
-      white-space: nowrap; 
-    }
-    
-    .reader-logo-sm { 
-      width: 24px; 
-      height: 24px; 
-      background: url('https://i.imgur.com/JkxRYd6.png') center/contain no-repeat; 
-      border-radius: 5px; 
-      flex-shrink: 0;
-      opacity: 0.8;
-    }
 
-    /* Book Area */
-    .book-area { 
-      flex: 1; 
-      position: relative; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      perspective: 2000px; 
-      overflow: hidden; 
-      background: #0a0a0a; 
-    }
-    
-    .book-spread { 
-      width: 100%; 
-      height: 100%; 
-      display: flex; 
-      position: relative; 
-    }
+    .reader-title { flex: 1; color: var(--text); font-size: 0.74rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .reader-logo-sm { width: 24px; height: 24px; background: url('https://i.imgur.com/JkxRYd6.png') center/contain no-repeat; border-radius: 5px; flex-shrink: 0; opacity: 0.8; }
+
+    .book-area { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; perspective: 2000px; overflow: hidden; background: #0a0a0a; }
+    .book-spread { width: 100%; height: 100%; display: flex; position: relative; }
 
     .page-left-wrap { width: 50%; height: 100%; position: relative; }
-    .page-left-inner { 
-      position: absolute; 
-      inset: 0; 
-      background: var(--page-color); 
-      display: flex; 
-      flex-direction: column; 
-      overflow: hidden; 
-    }
-    .pdf-area-left { 
-      flex: 1; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      padding: 6px; 
-      overflow: hidden; 
-    }
-    .pdf-canvas-left { 
-      max-width: 100%; 
-      max-height: 100%; 
-      background: #fff;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    }
+    .page-left-inner { position: absolute; inset: 0; background: var(--page-color); display: flex; flex-direction: column; overflow: hidden; }
+    .pdf-area-left { flex: 1; display: flex; align-items: center; justify-content: center; padding: 6px; overflow: hidden; }
+    .pdf-canvas-left { max-width: 100%; max-height: 100%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 
-    .page-right-wrap { 
-      width: 50%; 
-      height: 100%; 
-      position: relative; 
-      perspective: 1500px; 
-    }
-    
-    .page-flip { 
-      position: absolute; 
-      inset: 0; 
-      transform-style: preserve-3d; 
-      transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1); 
-      z-index: 10; 
-      transform-origin: left center; 
-    }
-    
-    .page-back-face { 
-      position: absolute; 
-      inset: 0; 
-      background: #e8dcc8; 
-      backface-visibility: hidden; 
-      -webkit-backface-visibility: hidden; 
-      transform: rotateY(180deg); 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      padding: 6px; 
-    }
-    
-    .page-front-face { 
-      position: absolute; 
-      inset: 0; 
-      background: var(--page-color); 
-      backface-visibility: hidden; 
-      -webkit-backface-visibility: hidden; 
-      display: flex; 
-      flex-direction: column; 
-      overflow: hidden; 
-    }
-    
-    .pdf-area-right { 
-      flex: 1; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      padding: 6px; 
-      overflow: hidden; 
-    }
-    
-    .pdf-canvas-right, .pdf-canvas-back { 
-      max-width: 100%; 
-      max-height: 100%; 
-      background: #fff;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    }
+    .page-right-wrap { width: 50%; height: 100%; position: relative; perspective: 1500px; }
 
-    .page-label { 
-      text-align: center; 
-      padding: 3px; 
-      font-size: 0.55rem; 
-      color: #aaa; 
-      flex-shrink: 0;
-    }
-    
-    .spine-line { 
-      position: absolute; 
-      left: 50%; 
-      top: 0; 
-      bottom: 0; 
-      width: 1px; 
-      background: rgba(0,0,0,0.12); 
-      transform: translateX(-50%); 
-      z-index: 30; 
-      pointer-events: none; 
-    }
+    .page-flip { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1); z-index: 10; transform-origin: left center; }
+    .page-back-face { position: absolute; inset: 0; background: #e8dcc8; backface-visibility: hidden; -webkit-backface-visibility: hidden; transform: rotateY(180deg); display: flex; align-items: center; justify-content: center; padding: 6px; }
+    .page-front-face { position: absolute; inset: 0; background: var(--page-color); backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; overflow: hidden; }
+    .pdf-area-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 6px; overflow: hidden; }
+    .pdf-canvas-right, .pdf-canvas-back { max-width: 100%; max-height: 100%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 
-    /* Loading */
-    .load-overlay { 
-      position: absolute; 
-      inset: 0; 
-      background: rgba(0,0,0,0.94); 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      z-index: 80; 
-      transition: opacity 0.3s; 
-    }
+    .page-label { text-align: center; padding: 3px; font-size: 0.55rem; color: #aaa; flex-shrink: 0; }
+    .spine-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,0.12); transform: translateX(-50%); z-index: 30; pointer-events: none; }
+
+    .load-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.94); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 80; transition: opacity 0.3s; }
     .load-overlay.hidden { opacity: 0; pointer-events: none; }
-    
-    .spinner-ring { 
-      width: 40px; 
-      height: 40px; 
-      border: 3px solid rgba(255,255,255,0.08); 
-      border-top: 3px solid var(--accent); 
-      border-radius: 50%; 
-      animation: spinRing 0.7s linear infinite; 
-    }
+
+    .spinner-ring { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.08); border-top: 3px solid var(--accent); border-radius: 50%; animation: spinRing 0.7s linear infinite; }
     @keyframes spinRing { to { transform: rotate(360deg); } }
-    
-    .load-text { 
-      color: var(--text-secondary); 
-      margin-top: 10px; 
-      font-size: 0.72rem; 
-      letter-spacing: 0.5px;
-    }
-    
-    .load-progress { 
-      width: 200px; 
-      height: 3px; 
-      background: rgba(255,255,255,0.08); 
-      border-radius: 2px; 
-      margin-top: 10px; 
-      overflow: hidden; 
-    }
-    .load-progress-bar { 
-      height: 100%; 
-      background: var(--accent); 
-      border-radius: 2px; 
-      transition: width 0.3s ease; 
-      width: 0%; 
-    }
-    
-    .retry-btn { 
-      background: var(--accent); 
-      color: #1a1a1a; 
-      border: none; 
-      padding: 7px 18px; 
-      border-radius: 18px; 
-      cursor: pointer; 
-      font-weight: 600; 
-      font-size: 0.72rem; 
-      margin-top: 12px; 
-      font-family: inherit;
-      transition: all 0.2s;
-    }
+
+    .load-text { color: var(--text-secondary); margin-top: 10px; font-size: 0.72rem; letter-spacing: 0.5px; }
+    .load-progress { width: 200px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+    .load-progress-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s ease; width: 0%; }
+
+    .retry-btn { background: var(--accent); color: #1a1a1a; border: none; padding: 7px 18px; border-radius: 18px; cursor: pointer; font-weight: 600; font-size: 0.72rem; margin-top: 12px; font-family: inherit; transition: all 0.2s; }
     .retry-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
     .retry-btn.hidden { display: none; }
 
-    /* Bottom Bar */
-    .reader-bottombar { 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      gap: 14px; 
-      padding: 8px 16px; 
-      background: rgba(0,0,0,0.9);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      flex-shrink: 0; 
-      z-index: 60; 
-    }
-    
-    .nav-btn { 
-      width: 38px; 
-      height: 38px; 
-      border-radius: 50%; 
-      border: 1px solid rgba(255,255,255,0.12); 
-      background: rgba(255,255,255,0.04); 
-      color: var(--text); 
-      font-size: 1rem; 
-      cursor: pointer; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    .nav-btn:hover:not(:disabled) { 
-      background: rgba(255,255,255,0.1); 
-      border-color: var(--accent); 
-    }
+    .reader-bottombar { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 16px; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); flex-shrink: 0; z-index: 60; }
+
+    .nav-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: var(--text); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: var(--accent); }
     .nav-btn:active:not(:disabled) { transform: scale(0.9); }
     .nav-btn:disabled { opacity: 0.15; cursor: not-allowed; }
-    
-    .page-indicator { 
-      color: var(--text); 
-      font-size: 0.78rem; 
-      font-weight: 600; 
-      min-width: 80px; 
-      text-align: center; 
-      background: rgba(255,255,255,0.04); 
-      padding: 5px 12px; 
-      border-radius: 12px;
-      letter-spacing: 0.5px;
-    }
 
-    /* Toast */
-    .toast { 
-      position: fixed; 
-      top: 20px; 
-      left: 50%; 
-      transform: translateX(-50%); 
-      padding: 10px 20px; 
-      border-radius: 20px; 
-      font-size: 0.74rem; 
-      z-index: 200; 
-      display: none; 
-      animation: slideDown 0.3s ease; 
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    }
+    .page-indicator { color: var(--text); font-size: 0.78rem; font-weight: 600; min-width: 80px; text-align: center; background: rgba(255,255,255,0.04); padding: 5px 12px; border-radius: 12px; letter-spacing: 0.5px; }
+
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; font-size: 0.74rem; z-index: 200; display: none; animation: slideDown 0.3s ease; font-weight: 600; letter-spacing: 0.3px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
     .toast.show { display: block; }
     .toast.error { background: var(--danger); color: #fff; }
     .toast.success { background: var(--success); color: #fff; }
     .toast.info { background: var(--info); color: #fff; }
     .toast.warning { background: var(--warning); color: #1a1a1a; }
-    
-    @keyframes slideDown { 
-      from { opacity: 0; transform: translateX(-50%) translateY(-20px); } 
-      to { opacity: 1; transform: translateX(-50%) translateY(0); } 
-    }
 
-    /* ===== INSTALL PROMPT ===== */
-    .install-prompt {
-      display: none;
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--surface);
-      border: 1px solid var(--accent);
-      border-radius: 16px;
-      padding: 12px 20px;
-      z-index: 300;
-      color: var(--text);
-      font-size: 0.78rem;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-      align-items: center;
-      gap: 12px;
-    }
+    @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+    .install-prompt { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--accent); border-radius: 16px; padding: 12px 20px; z-index: 300; color: var(--text); font-size: 0.78rem; box-shadow: 0 8px 30px rgba(0,0,0,0.6); align-items: center; gap: 12px; }
     .install-prompt.show { display: flex; }
-    
-    .install-btn {
-      background: var(--accent);
-      color: #1a1a1a;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.7rem;
-      font-family: inherit;
-      white-space: nowrap;
-    }
-    
-    .install-dismiss {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      cursor: pointer;
-      font-size: 1.1rem;
-      padding: 2px;
-    }
+    .install-btn { background: var(--accent); color: #1a1a1a; border: none; padding: 6px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 0.7rem; font-family: inherit; white-space: nowrap; }
+    .install-dismiss { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.1rem; padding: 2px; }
 
-    /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
-      .app-header { 
-        padding: 6px 8px; 
-        gap: 6px;
-        min-height: 44px;
-      }
-      
+      .app-header { padding: 5px 8px; gap: 5px; min-height: 42px; }
       .logo { width: 26px; height: 26px; }
       .app-title { font-size: 0.82rem; }
-      
       .search-wrapper { max-width: 200px; margin: 0 4px; }
       .search-input { font-size: 0.7rem; padding: 5px 10px 5px 28px; }
       .search-icon { left: 8px; font-size: 0.7rem; }
-      
-      .sync-indicator { font-size: 0.55rem; padding: 3px 8px; }
       .sync-time { display: none; }
-      
       .year-pill { font-size: 0.6rem; padding: 4px 8px; }
       .refresh-btn { font-size: 0.65rem; padding: 4px 8px; }
-      
-      .book-grid { 
-        grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); 
-        gap: 6px; 
-      }
-      
+      .book-grid { grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 6px; }
       .book-card { padding: 10px 7px; }
       .book-card .card-emoji { font-size: 1.3rem; }
       .book-card .card-title { font-size: 0.64rem; }
       .book-card .card-url { font-size: 0.5rem; }
       .book-card .card-badge { font-size: 0.45rem; top: 4px; right: 4px; }
-      
       .filter-row { padding: 6px 8px; gap: 4px; }
       .filter-chip { font-size: 0.62rem; padding: 4px 10px; }
-      
       .reader-topbar { padding: 4px 8px; min-height: 38px; }
       .btn-back { font-size: 0.68rem; padding: 4px 10px; }
       .reader-title { font-size: 0.68rem; }
-      
-      .book-area { padding: 0; }
-      .pdf-area-left, .pdf-area-right { padding: 4px; }
-      
       .reader-bottombar { padding: 6px 10px; gap: 10px; }
       .nav-btn { width: 34px; height: 34px; font-size: 0.9rem; }
       .page-indicator { font-size: 0.7rem; min-width: 60px; padding: 4px 8px; }
-      
       .year-group-header { font-size: 0.68rem; }
+      .pdf-area-left, .pdf-area-right { padding: 4px; }
     }
 
     @media (max-width: 480px) {
-      .book-grid { 
-        grid-template-columns: repeat(2, 1fr); 
-        gap: 5px; 
-      }
-      
+      .book-grid { grid-template-columns: repeat(2, 1fr); gap: 5px; }
       .app-header { flex-wrap: wrap; gap: 4px; }
-      .search-wrapper { 
-        order: 10; 
-        max-width: 100%; 
-        flex-basis: 100%; 
-        margin: 4px 0; 
-      }
-      
+      .search-wrapper { order: 10; max-width: 100%; flex-basis: 100%; margin: 4px 0; }
       .sync-container { order: 5; }
       .header-actions { order: 5; }
-      
       .book-card { padding: 8px 5px; border-radius: 8px; }
       .book-card .card-emoji { font-size: 1.2rem; margin-bottom: 3px; }
       .book-card .card-title { font-size: 0.6rem; }
-      
-      .page-left-wrap, .page-right-wrap { width: 50%; }
-      .spine-line { width: 1px; }
-      
       .toast { font-size: 0.68rem; padding: 8px 16px; }
     }
 
@@ -965,7 +399,6 @@
       .book-card { padding: 16px 12px; }
       .book-card .card-emoji { font-size: 2rem; }
       .book-card .card-title { font-size: 0.8rem; }
-      
       .book-spread { max-width: 1100px; margin: 0 auto; }
     }
 
@@ -978,35 +411,19 @@
       .year-group-header { padding: 4px; }
     }
 
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0a0a0a;
-        --surface: #141414;
-      }
-    }
-
     @media (prefers-color-scheme: light) {
-      :root {
-        --bg: #f5f0eb;
-        --surface: #ffffff;
-        --text: #2c2c2c;
-        --text-secondary: #6b5e4e;
-      }
+      :root { --bg: #f5f0eb; --surface: #ffffff; --text: #2c2c2c; --text-secondary: #6b5e4e; }
     }
 
-    /* Reduced motion */
     @media (prefers-reduced-motion: reduce) {
       * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
   </style>
 </head>
 <body>
-  <!-- Offline Banner -->
   <div class="offline-banner" id="offlineBanner">⚠️ You are offline. Showing cached data.</div>
   
   <div class="app">
-    <!-- HEADER -->
     <div class="app-header">
       <div class="logo" title="Digital Library Logo"></div>
       <span class="app-title">Digital Library</span>
@@ -1029,9 +446,7 @@
       <button class="refresh-btn" id="refreshBtn" title="Refresh manual">🔄</button>
     </div>
 
-    <!-- MAIN -->
     <div class="main-content">
-      <!-- LIBRARY -->
       <div class="library-view" id="libraryView">
         <div class="filter-row" id="filterRow"></div>
         <div class="book-scroll" id="bookScroll">
@@ -1042,7 +457,6 @@
         </div>
       </div>
 
-      <!-- READER -->
       <div class="reader-view" id="readerView">
         <div class="reader-topbar">
           <button class="btn-back" id="btnBack">← Library</button>
@@ -1094,51 +508,39 @@
     </div>
   </div>
 
-  <!-- Install Prompt -->
   <div class="install-prompt" id="installPrompt">
     <span>📱 Install this app?</span>
     <button class="install-btn" id="installBtn">Install</button>
     <button class="install-dismiss" id="installDismiss">✕</button>
   </div>
 
-  <!-- Toast -->
   <div class="toast" id="toast"></div>
 
   <script>
     (function() {
       'use strict';
 
-      // ============================================
-      // CONFIG
-      // ============================================
-      const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwG0iQUK0-2evTzBfjM3pmEVBHDrlzroyJzdk-9ZfrSaA8l7POsziMHSXjSitUWeZrN/exec';
-      
-      const CHECK_UPDATE_INTERVAL = 5000;
-      const FULL_SYNC_INTERVAL = 30000;
-      const CACHE_DURATION = 3000;
+      var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwG0iQUK0-2evTzBfjM3pmEVBHDrlzroyJzdk-9ZfrSaA8l7POsziMHSXjSitUWeZrN/exec';
+      var CHECK_INTERVAL = 5000;
+      var SYNC_INTERVAL = 30000;
+      var CACHE_TIME = 3000;
 
-      // ============================================
-      // STATE
-      // ============================================
-      const state = {
+      var state = {
         allBooks: [], groupedBooks: {}, years: [], categories: [],
         currentBook: null, pdfDoc: null, totalPages: 0, totalSpreads: 0,
         currentSpread: 0, isFlipping: false,
         activeYear: '', activeCategory: '', searchQuery: '',
         lastSync: null, lastModified: null,
         cache: { data: null, time: 0 },
-        isOnline: navigator.onLine,
-        isSyncing: false,
-        deferredPrompt: null
+        isOnline: navigator.onLine, isSyncing: false,
+        deferredPrompt: null, checkTimer: null, syncTimer: null, toastTimer: null
       };
 
-      // ============================================
-      // DOM
-      // ============================================
-      const $ = (id) => document.getElementById(id);
-      const DOM = {
-        offlineBanner: $('offlineBanner'),
-        libraryView: $('libraryView'), bookScroll: $('bookScroll'), libLoading: $('libLoading'),
+      function $(id) { return document.getElementById(id); }
+
+      var DOM = {
+        offlineBanner: $('offlineBanner'), libraryView: $('libraryView'),
+        bookScroll: $('bookScroll'), libLoading: $('libLoading'),
         filterRow: $('filterRow'), yearBadges: $('yearBadges'),
         searchInput: $('searchInput'), refreshBtn: $('refreshBtn'),
         syncIndicator: $('syncIndicator'), syncText: $('syncText'),
@@ -1151,21 +553,24 @@
         pageLabelRight: $('pageLabelRight'), pageIndicator: $('pageIndicator'),
         readerBookTitle: $('readerBookTitle'), btnPrev: $('btnPrev'),
         btnNext: $('btnNext'), btnBack: $('btnBack'), toast: $('toast'),
-        installPrompt: $('installPrompt'), installBtn: $('installBtn'), installDismiss: $('installDismiss'),
+        installPrompt: $('installPrompt'), installBtn: $('installBtn'), installDismiss: $('installDismiss')
       };
 
-      // ============================================
-      // UTILS
-      // ============================================
-      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-      const escHtml = (s) => s ? String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]) : '';
-      const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+      function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 
-      function toast(msg, type = 'info', dur = 2500) {
+      function escHtml(s) {
+        if (!s) return '';
+        return String(s).replace(/[&<>"']/g, function(m) {
+          return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m];
+        });
+      }
+
+      function toast(msg, type, dur) {
+        type = type || 'info'; dur = dur || 2500;
         DOM.toast.textContent = msg;
         DOM.toast.className = 'toast show ' + type;
-        clearTimeout(state._tt);
-        state._tt = setTimeout(() => DOM.toast.classList.remove('show'), dur);
+        clearTimeout(state.toastTimer);
+        state.toastTimer = setTimeout(function() { DOM.toast.classList.remove('show'); }, dur);
       }
 
       function setSyncStatus(status, text) {
@@ -1174,12 +579,11 @@
       }
 
       function updateSyncTime() {
-        if (state.lastSync) {
-          const diff = Math.floor((Date.now() - new Date(state.lastSync).getTime()) / 1000);
-          if (diff < 10) DOM.syncTime.textContent = 'Just now';
-          else if (diff < 60) DOM.syncTime.textContent = diff + 's ago';
-          else DOM.syncTime.textContent = Math.floor(diff / 60) + 'm ago';
-        }
+        if (!state.lastSync) return;
+        var diff = Math.floor((Date.now() - new Date(state.lastSync).getTime()) / 1000);
+        if (diff < 10) DOM.syncTime.textContent = 'Just now';
+        else if (diff < 60) DOM.syncTime.textContent = diff + 's ago';
+        else DOM.syncTime.textContent = Math.floor(diff / 60) + 'm ago';
       }
 
       function showAutoRefreshBadge() {
@@ -1187,7 +591,7 @@
         DOM.autoRefreshBadge.style.animation = 'none';
         DOM.autoRefreshBadge.offsetHeight;
         DOM.autoRefreshBadge.style.animation = 'fadeInOut 3s ease-in-out';
-        setTimeout(() => { DOM.autoRefreshBadge.style.display = 'none'; }, 3000);
+        setTimeout(function() { DOM.autoRefreshBadge.style.display = 'none'; }, 3000);
       }
 
       function updateOnlineStatus() {
@@ -1201,21 +605,21 @@
         }
       }
 
-      function showLibLoading(s) { DOM.libLoading.classList.toggle('hidden', !s); }
-      
-      function showReaderLoading(s, txt = '', prog = 0) {
-        DOM.readerLoading.classList.toggle('hidden', !s);
-        if (txt) DOM.readerLoadText.textContent = txt;
-        DOM.loadProgressBar.style.width = prog + '%';
-        if (s) DOM.retryBtn.classList.add('hidden');
+      function showLibLoading(show) { DOM.libLoading.classList.toggle('hidden', !show); }
+
+      function showReaderLoading(show, text, prog) {
+        DOM.readerLoading.classList.toggle('hidden', !show);
+        if (text) DOM.readerLoadText.textContent = text;
+        DOM.loadProgressBar.style.width = (prog || 0) + '%';
+        if (show) DOM.retryBtn.classList.add('hidden');
       }
 
       function updateNav() {
         DOM.btnPrev.disabled = state.currentSpread <= 0 || state.isFlipping;
         DOM.btnNext.disabled = state.currentSpread >= state.totalSpreads - 1 || state.isFlipping;
-        const lp = state.currentSpread * 2 + 1;
-        const rp = Math.min(lp + 1, state.totalPages);
-        DOM.pageIndicator.textContent = `${lp}-${rp} / ${state.totalPages}`;
+        var lp = state.currentSpread * 2 + 1;
+        var rp = Math.min(lp + 1, state.totalPages);
+        DOM.pageIndicator.textContent = lp + '-' + rp + ' / ' + state.totalPages;
       }
 
       function clearCanvas(c) {
@@ -1224,18 +628,38 @@
         c.getContext('2d').clearRect(0, 0, 1, 1);
       }
 
+      // PDF.js wait
+      function waitForPDFJS() {
+        return new Promise(function(resolve) {
+          if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+            resolve(); return;
+          }
+          var attempts = 0;
+          var interval = setInterval(function() {
+            attempts++;
+            if (typeof pdfjsLib !== 'undefined') {
+              clearInterval(interval);
+              pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+              resolve();
+            } else if (attempts > 40) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 150);
+        });
+      }
+
       // ============================================
-      // REAL-TIME SYNC
+      // SYNC
       // ============================================
       async function checkForUpdates() {
         if (state.isSyncing || state.currentBook || !state.isOnline) return;
-        
         try {
-          const lastSync = state.lastModified || state.lastSync || '';
-          const url = `${WEBAPP_URL}?action=checkUpdates&lastSync=${encodeURIComponent(lastSync)}`;
-          const res = await fetch(url);
-          const data = await res.json();
-          
+          var lastSync = state.lastModified || state.lastSync || '';
+          var url = WEBAPP_URL + '?action=checkUpdates&lastSync=' + encodeURIComponent(lastSync);
+          var res = await fetch(url);
+          var data = await res.json();
           if (data.success && data.hasUpdates) {
             console.log('🔄 Updates detected!');
             setSyncStatus('updating', 'Updating...');
@@ -1247,11 +671,7 @@
             setSyncStatus('live', 'Live');
             updateSyncTime();
           }
-        } catch (e) {
-          if (!navigator.onLine) {
-            setSyncStatus('offline', 'Offline');
-          }
-        }
+        } catch (e) { /* silent */ }
       }
 
       async function fullSync() {
@@ -1262,27 +682,23 @@
         updateSyncTime();
       }
 
-      let checkInterval, syncInterval;
-      
       function startAutoSync() {
         stopAutoSync();
-        checkInterval = setInterval(checkForUpdates, CHECK_UPDATE_INTERVAL);
-        syncInterval = setInterval(fullSync, FULL_SYNC_INTERVAL);
-        console.log('✅ Auto-sync started');
+        state.checkTimer = setInterval(checkForUpdates, CHECK_INTERVAL);
+        state.syncTimer = setInterval(fullSync, SYNC_INTERVAL);
       }
 
       function stopAutoSync() {
-        if (checkInterval) clearInterval(checkInterval);
-        if (syncInterval) clearInterval(syncInterval);
+        if (state.checkTimer) clearInterval(state.checkTimer);
+        if (state.syncTimer) clearInterval(state.syncTimer);
       }
 
       // ============================================
       // FETCH BOOKS
       // ============================================
-      async function fetchBooks(force = false) {
+      async function fetchBooks(force) {
         if (state.isSyncing || !state.isOnline) return;
-        
-        if (!force && state.cache.data && (Date.now() - state.cache.time) < CACHE_DURATION) {
+        if (!force && state.cache.data && (Date.now() - state.cache.time) < CACHE_TIME) {
           state.allBooks = state.cache.data;
           processBooks();
           return;
@@ -1290,16 +706,16 @@
 
         state.isSyncing = true;
         showLibLoading(true);
-        
+
         try {
-          const p = new URLSearchParams();
-          if (state.searchQuery) p.append('q', state.searchQuery);
-          if (state.activeYear) p.append('year', state.activeYear);
-          
-          const url = WEBAPP_URL + (p.toString() ? '?' + p.toString() : '');
-          const res = await fetch(url);
-          const data = await res.json();
-          
+          var params = [];
+          if (state.searchQuery) params.push('q=' + encodeURIComponent(state.searchQuery));
+          if (state.activeYear) params.push('year=' + encodeURIComponent(state.activeYear));
+          var url = WEBAPP_URL + (params.length ? '?' + params.join('&') : '');
+
+          var res = await fetch(url);
+          var data = await res.json();
+
           if (data.success) {
             state.allBooks = data.books || [];
             state.years = data.years || [];
@@ -1313,86 +729,87 @@
         } catch (e) {
           console.warn('Fetch error:', e.message);
           if (!state.allBooks.length) {
-            state.allBooks = [
-              { title: '📄 Sample PDF', url: 'https://drive.google.com/open?id=11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Teknologi' }
-            ];
+            state.allBooks = [{
+              title: '📄 Sample PDF', url: 'https://drive.google.com/open?id=11331lbF_25t8rLm5MPkHiJJlyMeG7uGy',
+              fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Teknologi'
+            }];
             state.years = ['2024/2025'];
             state.categories = ['Teknologi'];
             processBooks();
           }
         }
-        
+
         showLibLoading(false);
         state.isSyncing = false;
       }
 
       function processBooks() {
-        const filtered = state.allBooks.filter(b => {
+        var filtered = state.allBooks.filter(function(b) {
           if (state.activeYear && b.academicYear !== state.activeYear) return false;
           if (state.activeCategory && b.category !== state.activeCategory) return false;
           return true;
         });
-        
+
         state.groupedBooks = {};
-        filtered.forEach(b => {
-          const y = b.academicYear || 'Unknown';
-          (state.groupedBooks[y] = state.groupedBooks[y] || []).push(b);
+        filtered.forEach(function(b) {
+          var y = b.academicYear || 'Unknown';
+          if (!state.groupedBooks[y]) state.groupedBooks[y] = [];
+          state.groupedBooks[y].push(b);
         });
-        
+
         renderUI();
       }
 
       function renderUI() {
-        // Year badges
-        DOM.yearBadges.innerHTML = state.years.slice(0, 3).map(y =>
-          `<button class="year-pill ${state.activeYear===y?'active':''}" data-year="${escHtml(y)}">📅 ${escHtml(y)}</button>`
-        ).join('');
-        DOM.yearBadges.querySelectorAll('.year-pill').forEach(p => {
+        DOM.yearBadges.innerHTML = state.years.slice(0, 3).map(function(y) {
+          return '<button class="year-pill' + (state.activeYear === y ? ' active' : '') + '" data-year="' + escHtml(y) + '">📅 ' + escHtml(y) + '</button>';
+        }).join('');
+        DOM.yearBadges.querySelectorAll('.year-pill').forEach(function(p) {
           p.addEventListener('click', function() {
-            state.activeYear = state.activeYear === this.getAttribute('data-year') ? '' : this.getAttribute('data-year');
+            var y = this.getAttribute('data-year');
+            state.activeYear = state.activeYear === y ? '' : y;
             processBooks();
           });
         });
 
-        // Filter chips
-        const chips = [`<button class="filter-chip ${!state.activeCategory?'active':''}" data-category="">📚 All</button>`];
-        state.categories.forEach(c => chips.push(`<button class="filter-chip ${state.activeCategory===c?'active':''}" data-category="${escHtml(c)}">${escHtml(c)}</button>`));
+        var chips = ['<button class="filter-chip' + (!state.activeCategory ? ' active' : '') + '" data-category="">📚 All</button>'];
+        state.categories.forEach(function(c) {
+          chips.push('<button class="filter-chip' + (state.activeCategory === c ? ' active' : '') + '" data-category="' + escHtml(c) + '">' + escHtml(c) + '</button>');
+        });
         DOM.filterRow.innerHTML = chips.join('');
-        DOM.filterRow.querySelectorAll('.filter-chip').forEach(ch => {
+        DOM.filterRow.querySelectorAll('.filter-chip').forEach(function(ch) {
           ch.addEventListener('click', function() {
             state.activeCategory = this.getAttribute('data-category') || '';
             processBooks();
           });
         });
 
-        // Book grid
-        const years = Object.keys(state.groupedBooks).sort().reverse();
+        var years = Object.keys(state.groupedBooks).sort().reverse();
         if (!years.length) {
           DOM.bookScroll.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">No books found</div><div class="empty-sub">Try changing filters</div></div>';
           return;
         }
 
-        const icons = ['📕','📗','📘','📙','📓','📔','📒','📑','📖','📚'];
-        let html = '';
-        years.forEach(y => {
-          const books = state.groupedBooks[y];
-          html += `<div class="year-group">
-            <div class="year-group-header">📅 ${escHtml(y)} <span class="book-count">${books.length} books</span></div>
-            <div class="book-grid">
-              ${books.map((b, i) => `
-                <div class="book-card" data-fileid="${escHtml(b.fileId)}" data-title="${escHtml(b.title)}" data-url="${escHtml(b.url)}">
-                  <div class="card-badge">${escHtml(b.category||'')}</div>
-                  <div class="card-emoji">${icons[i%10]}</div>
-                  <div class="card-title">${escHtml(b.title)}</div>
-                  <div class="card-url">🔗 ${escHtml((b.url||'').substring(0, 30))}...</div>
-                </div>
-              `).join('')}
-            </div>
-          </div>`;
+        var icons = ['📕','📗','📘','📙','📓','📔','📒','📑','📖','📚'];
+        var html = '';
+        years.forEach(function(y) {
+          var books = state.groupedBooks[y];
+          html += '<div class="year-group">';
+          html += '<div class="year-group-header">📅 ' + escHtml(y) + ' <span class="book-count">' + books.length + ' books</span></div>';
+          html += '<div class="book-grid">';
+          books.forEach(function(b, i) {
+            html += '<div class="book-card" data-fileid="' + escHtml(b.fileId) + '" data-title="' + escHtml(b.title) + '" data-url="' + escHtml(b.url) + '">';
+            html += '<div class="card-badge">' + escHtml(b.category || '') + '</div>';
+            html += '<div class="card-emoji">' + icons[i % 10] + '</div>';
+            html += '<div class="card-title">' + escHtml(b.title) + '</div>';
+            html += '<div class="card-url">🔗 ' + escHtml((b.url || '').substring(0, 30)) + '...</div>';
+            html += '</div>';
+          });
+          html += '</div></div>';
         });
-        
+
         DOM.bookScroll.innerHTML = html;
-        DOM.bookScroll.querySelectorAll('.book-card').forEach(card => {
+        DOM.bookScroll.querySelectorAll('.book-card').forEach(function(card) {
           card.addEventListener('click', function() {
             openBook(this.getAttribute('data-fileid'), this.getAttribute('data-title'), this.getAttribute('data-url'));
           });
@@ -1402,17 +819,24 @@
       // ============================================
       // SEARCH
       // ============================================
-      const debouncedSearch = debounce((q) => { state.searchQuery = q; fetchBooks(true); }, 350);
-      DOM.searchInput.addEventListener('input', function() { debouncedSearch(this.value.trim()); });
-      
-      DOM.refreshBtn.addEventListener('click', () => { 
+      var searchTimer;
+      DOM.searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        var self = this;
+        searchTimer = setTimeout(function() {
+          state.searchQuery = self.value.trim();
+          fetchBooks(true);
+        }, 350);
+      });
+
+      DOM.refreshBtn.addEventListener('click', function() {
         DOM.refreshBtn.classList.add('spinning');
-        fullSync().then(() => {
-          setTimeout(() => DOM.refreshBtn.classList.remove('spinning'), 800);
+        fullSync().then(function() {
+          setTimeout(function() { DOM.refreshBtn.classList.remove('spinning'); }, 800);
         });
       });
 
-      DOM.syncIndicator.addEventListener('click', () => {
+      DOM.syncIndicator.addEventListener('click', function() {
         if (!state.isSyncing) fullSync();
       });
 
@@ -1421,58 +845,66 @@
       // ============================================
       async function openBook(fileId, title, url) {
         stopAutoSync();
-        
-        state.currentBook = { fileId, title, url };
-        state.pdfDoc = null;
-        state.totalPages = 0; state.totalSpreads = 0;
+        state.currentBook = { fileId: fileId, title: title, url: url };
+        state.pdfDoc = null; state.totalPages = 0; state.totalSpreads = 0;
         state.currentSpread = 0; state.isFlipping = false;
 
         DOM.readerBookTitle.textContent = title;
         DOM.readerView.classList.add('active');
-        
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
-        [DOM.pdfCanvasLeft, DOM.pdfCanvasRight, DOM.pdfCanvasBack].forEach(clearCanvas);
-        
-        DOM.pageLabelLeft.textContent = '';
-        DOM.pageLabelRight.textContent = '';
-        DOM.pageIndicator.textContent = '0 / 0';
-        updateNav();
-        
+        clearCanvas(DOM.pdfCanvasLeft); clearCanvas(DOM.pdfCanvasRight); clearCanvas(DOM.pdfCanvasBack);
+        DOM.pageLabelLeft.textContent = ''; DOM.pageLabelRight.textContent = '';
+        DOM.pageIndicator.textContent = '0 / 0'; updateNav();
+
         showReaderLoading(true, 'Loading PDF...', 10);
-        await loadPDFFromBase64(fileId);
+        await loadPDF(fileId);
       }
 
-      async function loadPDFFromBase64(fileId) {
+      async function loadPDF(fileId) {
         try {
-          const infoUrl = `${WEBAPP_URL}?action=getPDFInfo&fileId=${fileId}`;
-          const infoRes = await fetch(infoUrl);
-          const infoData = await infoRes.json();
-          
+          var infoUrl = WEBAPP_URL + '?action=getPDFInfo&fileId=' + fileId;
+          var infoRes = await fetch(infoUrl);
+          var infoData = await infoRes.json();
           if (!infoData.success) throw new Error('Cannot get PDF info');
-          
-          const totalChunks = infoData.totalChunks;
-          let fullBase64 = '';
-          
-          for (let i = 0; i < totalChunks; i++) {
-            const chunkUrl = `${WEBAPP_URL}?action=getPDFChunk&fileId=${fileId}&chunk=${i}`;
-            const chunkRes = await fetch(chunkUrl);
-            const chunkData = await chunkRes.json();
-            if (!chunkData.success) throw new Error('Chunk failed');
+
+          var totalChunks = infoData.totalChunks;
+          var fullBase64 = '';
+
+          for (var i = 0; i < totalChunks; i++) {
+            var chunkUrl = WEBAPP_URL + '?action=getPDFChunk&fileId=' + fileId + '&chunk=' + i;
+            var chunkRes = await fetch(chunkUrl);
+            var chunkData = await chunkRes.json();
+            if (!chunkData.success) throw new Error('Chunk ' + i + ' failed');
             fullBase64 += chunkData.data;
-            showReaderLoading(true, `Downloading ${i+1}/${totalChunks}...`, 10 + Math.round(((i+1)/totalChunks)*40));
+            showReaderLoading(true, 'Downloading ' + (i + 1) + '/' + totalChunks + '...', 10 + Math.round(((i + 1) / totalChunks) * 40));
           }
-          
-          if (typeof pdfjsLib !== 'undefined') {
-            await renderPDFWithPDFJS(fullBase64);
-          } else {
-            throw new Error('PDF.js not loaded');
-          }
-          
+
+          await waitForPDFJS();
+          if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js not available');
+
+          var binaryStr = atob(fullBase64);
+          var bytes = new Uint8Array(binaryStr.length);
+          for (var j = 0; j < binaryStr.length; j++) bytes[j] = binaryStr.charCodeAt(j);
+
+          showReaderLoading(true, 'Processing...', 55);
+          var loadingTask = pdfjsLib.getDocument({
+            data: bytes,
+            cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+            cMapPacked: true
+          });
+
+          state.pdfDoc = await loadingTask.promise;
+          state.totalPages = state.pdfDoc.numPages;
+          state.totalSpreads = Math.ceil(state.totalPages / 2);
+          state.currentSpread = 0;
+
+          showReaderLoading(true, 'Rendering...', 80);
+          await renderSpread(0);
           showReaderLoading(false);
           updateNav();
           toast('✅ PDF loaded!', 'success', 2000);
-          
+
         } catch (e) {
           console.error('Load error:', e);
           showReaderLoading(true, 'Failed to load', 0);
@@ -1481,56 +913,26 @@
         }
       }
 
-      async function renderPDFWithPDFJS(base64Data) {
-        const binaryStr = atob(base64Data);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-        
-        showReaderLoading(true, 'Processing...', 55);
-        
-        const loadingTask = pdfjsLib.getDocument({
-          data: bytes,
-          cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
-          cMapPacked: true,
-        });
-        
-        state.pdfDoc = await loadingTask.promise;
-        state.totalPages = state.pdfDoc.numPages;
-        state.totalSpreads = Math.ceil(state.totalPages / 2);
-        state.currentSpread = 0;
-        
-        showReaderLoading(true, 'Rendering...', 80);
-        await renderPDFSpread(0);
-      }
-
-      async function renderPDFSpread(idx) {
+      async function renderSpread(idx) {
         if (!state.pdfDoc) return;
-        const lp = idx * 2 + 1, rp = lp + 1;
-        
-        if (lp <= state.totalPages) {
-          await renderPDFPage(lp, DOM.pdfCanvasLeft);
-          DOM.pageLabelLeft.textContent = `Page ${lp}`;
-        } else { clearCanvas(DOM.pdfCanvasLeft); DOM.pageLabelLeft.textContent = ''; }
-        
-        if (rp <= state.totalPages) {
-          await renderPDFPage(rp, DOM.pdfCanvasRight);
-          DOM.pageLabelRight.textContent = `Page ${rp}`;
-        } else { clearCanvas(DOM.pdfCanvasRight); DOM.pageLabelRight.textContent = ''; }
-        
+        var lp = idx * 2 + 1, rp = lp + 1;
+        if (lp <= state.totalPages) { await renderPage(lp, DOM.pdfCanvasLeft); DOM.pageLabelLeft.textContent = 'Page ' + lp; }
+        else { clearCanvas(DOM.pdfCanvasLeft); DOM.pageLabelLeft.textContent = ''; }
+        if (rp <= state.totalPages) { await renderPage(rp, DOM.pdfCanvasRight); DOM.pageLabelRight.textContent = 'Page ' + rp; }
+        else { clearCanvas(DOM.pdfCanvasRight); DOM.pageLabelRight.textContent = ''; }
         updateNav();
       }
 
-      async function renderPDFPage(num, canvas) {
+      async function renderPage(num, canvas) {
         if (!state.pdfDoc || num > state.totalPages) return;
-        const page = await state.pdfDoc.getPage(num);
-        const pw = canvas.parentElement.clientWidth - 10;
-        const ph = canvas.parentElement.clientHeight - 10;
-        const vp = page.getViewport({ scale: 1 });
-        const scale = Math.min(pw/vp.width, ph/vp.height, 2.5);
-        const svp = page.getViewport({ scale });
-        
+        var page = await state.pdfDoc.getPage(num);
+        var pw = canvas.parentElement.clientWidth - 10;
+        var ph = canvas.parentElement.clientHeight - 10;
+        var vp = page.getViewport({ scale: 1 });
+        var scale = Math.min(pw / vp.width, ph / vp.height, 2.5);
+        var svp = page.getViewport({ scale: scale });
         canvas.height = svp.height; canvas.width = svp.width;
-        const ctx = canvas.getContext('2d');
+        var ctx = canvas.getContext('2d');
         ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
         await page.render({ canvasContext: ctx, viewport: svp, background: '#fff' }).promise;
       }
@@ -1539,19 +941,16 @@
       // FLIP
       // ============================================
       async function flipNext() {
-        if (state.isFlipping || state.currentSpread >= state.totalSpreads-1) return;
+        if (state.isFlipping || state.currentSpread >= state.totalSpreads - 1) return;
         state.isFlipping = true; updateNav();
-        
-        const nl = (state.currentSpread+1)*2+1;
-        if (state.pdfDoc && nl <= state.totalPages) await renderPDFPage(nl, DOM.pdfCanvasBack);
-        
+        var nl = (state.currentSpread + 1) * 2 + 1;
+        if (state.pdfDoc && nl <= state.totalPages) await renderPage(nl, DOM.pdfCanvasBack);
         DOM.pageFlip.style.transition = 'transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1)';
         DOM.pageFlip.style.transform = 'rotateY(-180deg)';
         await sleep(550);
-        
         state.currentSpread++;
         DOM.pageFlip.style.transition = 'none'; DOM.pageFlip.style.transform = 'rotateY(0deg)';
-        if (state.pdfDoc) await renderPDFSpread(state.currentSpread);
+        if (state.pdfDoc) await renderSpread(state.currentSpread);
         await sleep(30);
         DOM.pageFlip.style.transition = 'transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1)';
         state.isFlipping = false; updateNav();
@@ -1560,13 +959,11 @@
       async function flipPrev() {
         if (state.isFlipping || state.currentSpread <= 0) return;
         state.isFlipping = true; updateNav();
-        
-        const pr = state.currentSpread*2;
-        if (state.pdfDoc && pr <= state.totalPages) await renderPDFPage(pr, DOM.pdfCanvasBack);
-        
+        var pr = state.currentSpread * 2;
+        if (state.pdfDoc && pr <= state.totalPages) await renderPage(pr, DOM.pdfCanvasBack);
         DOM.pageFlip.style.transition = 'none'; DOM.pageFlip.style.transform = 'rotateY(-180deg)';
         state.currentSpread--;
-        if (state.pdfDoc) await renderPDFSpread(state.currentSpread);
+        if (state.pdfDoc) await renderSpread(state.currentSpread);
         await sleep(30);
         DOM.pageFlip.style.transition = 'transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1)';
         DOM.pageFlip.style.transform = 'rotateY(0deg)';
@@ -1588,140 +985,99 @@
       DOM.btnPrev.addEventListener('click', flipPrev);
       DOM.btnNext.addEventListener('click', flipNext);
       DOM.btnBack.addEventListener('click', goBack);
-      DOM.retryBtn.addEventListener('click', () => {
-        if(state.currentBook) openBook(state.currentBook.fileId, state.currentBook.title, state.currentBook.url);
+      DOM.retryBtn.addEventListener('click', function() {
+        if (state.currentBook) openBook(state.currentBook.fileId, state.currentBook.title, state.currentBook.url);
       });
 
-      document.addEventListener('keydown', e => {
+      document.addEventListener('keydown', function(e) {
         if (!state.currentBook || state.isFlipping) return;
-        if (e.key === 'ArrowRight'||e.key==='PageDown') { e.preventDefault(); flipNext(); }
-        else if (e.key === 'ArrowLeft'||e.key==='PageUp') { e.preventDefault(); flipPrev(); }
+        if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); flipNext(); }
+        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); flipPrev(); }
         else if (e.key === 'Escape') goBack();
       });
 
-      let tx = 0;
-      DOM.pageFrontFace.addEventListener('touchstart', e => { if(state.currentBook&&!state.isFlipping) tx=e.touches[0].clientX; }, {passive:true});
-      DOM.pageFrontFace.addEventListener('touchend', e => {
-        if(!state.currentBook||state.isFlipping||!tx) return;
-        const dx = tx - e.changedTouches[0].clientX;
-        if(Math.abs(dx)>40) dx>0?flipNext():flipPrev();
-        tx=0;
-      });
-      DOM.pageFrontFace.addEventListener('click', e => {
-        if(!state.currentBook||state.isFlipping) return;
-        const x = e.clientX - DOM.pageFrontFace.getBoundingClientRect().left;
-        if(x < DOM.pageFrontFace.offsetWidth*0.25) flipPrev();
-        else if(x > DOM.pageFrontFace.offsetWidth*0.75) flipNext();
+      var tx = 0;
+      DOM.pageFrontFace.addEventListener('touchstart', function(e) {
+        if (state.currentBook && !state.isFlipping) tx = e.touches[0].clientX;
+      }, { passive: true });
+
+      DOM.pageFrontFace.addEventListener('touchend', function(e) {
+        if (!state.currentBook || state.isFlipping || !tx) return;
+        var dx = tx - e.changedTouches[0].clientX;
+        if (Math.abs(dx) > 40) dx > 0 ? flipNext() : flipPrev();
+        tx = 0;
       });
 
-      let rt;
-      window.addEventListener('resize', () => {
-        clearTimeout(rt);
-        rt=setTimeout(()=>{ if(state.pdfDoc&&state.currentBook) renderPDFSpread(state.currentSpread); }, 300);
+      DOM.pageFrontFace.addEventListener('click', function(e) {
+        if (!state.currentBook || state.isFlipping) return;
+        var rect = DOM.pageFrontFace.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        if (x < rect.width * 0.25) flipPrev();
+        else if (x > rect.width * 0.75) flipNext();
       });
 
-      // Online/Offline
+      var resizeTimer;
+      window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+          if (state.pdfDoc && state.currentBook) renderSpread(state.currentSpread);
+        }, 300);
+      });
+
       window.addEventListener('online', updateOnlineStatus);
       window.addEventListener('offline', updateOnlineStatus);
 
       // PWA Install
-      window.addEventListener('beforeinstallprompt', (e) => {
+      window.addEventListener('beforeinstallprompt', function(e) {
         e.preventDefault();
         state.deferredPrompt = e;
         DOM.installPrompt.classList.add('show');
       });
 
-      DOM.installBtn.addEventListener('click', async () => {
+      DOM.installBtn.addEventListener('click', async function() {
         if (state.deferredPrompt) {
           state.deferredPrompt.prompt();
-          const result = await state.deferredPrompt.userChoice;
-          console.log('Install:', result.outcome);
+          await state.deferredPrompt.userChoice;
           state.deferredPrompt = null;
           DOM.installPrompt.classList.remove('show');
         }
       });
 
-      DOM.installDismiss.addEventListener('click', () => {
+      DOM.installDismiss.addEventListener('click', function() {
         DOM.installPrompt.classList.remove('show');
       });
 
-      window.addEventListener('appinstalled', () => {
+      window.addEventListener('appinstalled', function() {
         console.log('✅ App installed!');
         DOM.installPrompt.classList.remove('show');
         toast('✅ App installed successfully!', 'success', 3000);
       });
 
-      // ============================================
-      // SERVICE WORKER
-      // ============================================
+      // Service Worker
       if ('serviceWorker' in navigator) {
-        const swCode = `
-          const CACHE_NAME = 'digital-library-v10';
-          const urlsToCache = ['/'];
-          
-          self.addEventListener('install', event => {
-            event.waitUntil(
-              caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-            );
-            self.skipWaiting();
-          });
-          
-          self.addEventListener('activate', event => {
-            event.waitUntil(
-              caches.keys().then(keys => 
-                Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-              )
-            );
-            self.clients.claim();
-          });
-          
-          self.addEventListener('fetch', event => {
-            if (event.request.url.includes('googleapis.com') || 
-                event.request.url.includes('script.google.com')) {
-              event.respondWith(fetch(event.request));
-              return;
-            }
-            
-            event.respondWith(
-              caches.match(event.request).then(cached => {
-                return cached || fetch(event.request).then(response => {
-                  const clone = response.clone();
-                  caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                  return response;
-                }).catch(() => {
-                  if (event.request.mode === 'navigate') {
-                    return caches.match('/');
-                  }
-                  return new Response('Offline', { status: 503 });
-                });
-              })
-            );
-          });
-        `;
-        
-        const swBlob = new Blob([swCode], { type: 'application/javascript' });
-        navigator.serviceWorker.register(URL.createObjectURL(swBlob))
-          .then(reg => console.log('✅ SW registered:', reg.scope))
-          .catch(err => console.log('SW failed:', err));
+        var swCode = 'const CACHE="dl-v11";self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==CACHE).map(n=>caches.delete(n)))));self.clients.claim();});self.addEventListener("fetch",e=>{e.respondWith(caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{var cl=r.clone();caches.open(CACHE).then(ca=>ca.put(e.request,cl));return r;}).catch(()=>new Response("Offline",{status:503}))))});';
+        var swBlob = new Blob([swCode], { type: 'application/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(function() {});
       }
 
       // ============================================
       // INIT
       // ============================================
-      console.log('📖 Digital Library v10 - PWA + Live Sync');
-      console.log('✅ PWA ready (manifest + SW + install)');
-      console.log('✅ Fully responsive (mobile + tablet + desktop)');
-      console.log('✅ Real-time spreadsheet sync');
-      console.log('✅ Base64 PDF rendering');
-      
+      console.log('📖 Digital Library v11 - Production Ready');
+      console.log('✅ PWA | Responsive | Live Sync | Base64');
+
+      waitForPDFJS().then(function() {
+        console.log('✅ PDF.js ready');
+      });
+
       updateOnlineStatus();
-      fetchBooks().then(() => {
+      fetchBooks().then(function() {
         setSyncStatus('live', 'Live');
         updateSyncTime();
       });
-      
+
       startAutoSync();
-      
+
     })();
   </script>
 </body>
