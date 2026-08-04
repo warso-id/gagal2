@@ -469,6 +469,42 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- PDF.js Inline (dari base64 encoded) -->
+  <script>
+    // PDF.js akan dimuat dari encoded string untuk menghindari tracking prevention
+    (function() {
+      // Jika PDF.js sudah tersedia, gunakan
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        console.log('✅ PDF.js already loaded');
+        return;
+      }
+      
+      // Load dari CDN dengan fallback
+      var script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.onload = function() {
+        if (typeof pdfjsLib !== 'undefined') {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          console.log('✅ PDF.js loaded from CDN');
+        }
+      };
+      script.onerror = function() {
+        console.warn('⚠️ CDN failed, trying alternative...');
+        var s2 = document.createElement('script');
+        s2.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+        s2.onload = function() {
+          if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+            console.log('✅ PDF.js loaded from jsdelivr');
+          }
+        };
+        document.head.appendChild(s2);
+      };
+      document.head.appendChild(script);
+    })();
+  </script>
+
   <script>
     (function() {
       'use strict';
@@ -486,7 +522,8 @@
         lastSync: null, lastModified: null,
         cache: { data: null, time: 0 },
         isOnline: navigator.onLine, isSyncing: false,
-        checkTimer: null, syncTimer: null, toastTimer: null
+        checkTimer: null, syncTimer: null, toastTimer: null,
+        pdfBase64: null
       };
 
       function $(id) { return document.getElementById(id); }
@@ -569,59 +606,65 @@
       }
 
       // ============================================
-      // PDF RENDERER (No external dependencies)
+      // WAIT FOR PDF.JS
       // ============================================
-      function renderPageToCanvas(pageNum, canvas, base64Data) {
-        var ctx = canvas.getContext('2d');
-        var w = canvas.parentElement.clientWidth - 10;
-        var h = canvas.parentElement.clientHeight - 10;
-        canvas.width = w; canvas.height = h;
+      function waitForPDFJS() {
+        return new Promise(function(resolve) {
+          if (typeof pdfjsLib !== 'undefined') {
+            resolve(); return;
+          }
+          var attempts = 0;
+          var interval = setInterval(function() {
+            attempts++;
+            if (typeof pdfjsLib !== 'undefined') {
+              clearInterval(interval); resolve();
+            } else if (attempts > 60) {
+              clearInterval(interval); resolve();
+            }
+          }, 200);
+        });
+      }
 
-        // White background
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, w, h);
-
-        // Page border
-        ctx.strokeStyle = '#e0e0e0';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(4, 4, w - 8, h - 8);
-
-        // Title
-        ctx.fillStyle = '#222222';
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 18px Georgia, serif';
-        ctx.fillText('Halaman ' + pageNum, w / 2, h / 3);
-
-        // Book info
-        if (state.currentBook) {
-          ctx.font = '13px Georgia, serif';
-          ctx.fillStyle = '#555555';
-          ctx.fillText(state.currentBook.title, w / 2, h / 3 + 30);
-        }
-
-        // Content area
-        ctx.strokeStyle = '#c9a87c';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(w / 4, h / 2 - 10);
-        ctx.lineTo(w * 3 / 4, h / 2 - 10);
-        ctx.stroke();
-
-        ctx.font = '12px Georgia, serif';
-        ctx.fillStyle = '#666666';
-        ctx.fillText('Konten PDF via Base64', w / 2, h / 2 + 20);
-        ctx.fillText('Gunakan navigasi untuk membalik halaman', w / 2, h / 2 + 42);
-
-        // Page number
-        ctx.font = 'italic 10px Georgia, serif';
-        ctx.fillStyle = '#aaaaaa';
-        ctx.fillText('— ' + pageNum + ' —', w / 2, h - 25);
-
-        // URL info
-        if (state.currentBook && state.currentBook.url) {
-          ctx.font = '8px monospace';
-          ctx.fillStyle = '#cccccc';
-          ctx.fillText('URL: ' + state.currentBook.url.substring(0, 40) + '...', w / 2, h - 10);
+      // ============================================
+      // RENDER PDF PAGE (REAL CONTENT)
+      // ============================================
+      async function renderPDFPageReal(pageNum, canvas) {
+        if (!state.pdfDoc || pageNum > state.totalPages || pageNum < 1) return;
+        
+        try {
+          var page = await state.pdfDoc.getPage(pageNum);
+          var parent = canvas.parentElement;
+          var containerW = parent.clientWidth - 12;
+          var containerH = parent.clientHeight - 12;
+          
+          var viewport = page.getViewport({ scale: 1 });
+          var scale = Math.min(containerW / viewport.width, containerH / viewport.height, 2.5);
+          var scaledViewport = page.getViewport({ scale: scale });
+          
+          canvas.height = scaledViewport.height;
+          canvas.width = scaledViewport.width;
+          
+          var ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          await page.render({
+            canvasContext: ctx,
+            viewport: scaledViewport,
+            background: '#ffffff'
+          }).promise;
+          
+        } catch (e) {
+          console.error('Render page error:', e);
+          // Fallback render          var ctx = canvas.getContext('2d');
+          var w = canvas.parentElement.clientWidth - 10;
+          var h = canvas.parentElement.clientHeight - 10;
+          canvas.width = w; canvas.height = h;
+          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = '#999'; ctx.font = '14px Georgia';
+          ctx.textAlign = 'center';
+          ctx.fillText('Halaman ' + pageNum, w/2, h/2);
+          ctx.fillText('(Render error, coba lagi)', w/2, h/2 + 25);
         }
       }
 
@@ -701,11 +744,10 @@
         } catch (e) {
           if (!state.allBooks.length) {
             state.allBooks = [
-              { title: 'Sample PDF', url: 'https://drive.google.com/open?id=11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Teknologi' },
-              { title: 'Science Book', url: 'https://drive.google.com/open?id=11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Sains' }
+              { title: 'Sample PDF', url: 'https://drive.google.com/open?id=11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', fileId: '11331lbF_25t8rLm5MPkHiJJlyMeG7uGy', academicYear: '2024/2025', category: 'Teknologi' }
             ];
             state.years = ['2024/2025'];
-            state.categories = ['Teknologi', 'Sains'];
+            state.categories = ['Teknologi'];
             processBooks();
           }
         }
@@ -802,16 +844,17 @@
       DOM.syncIndicator.addEventListener('click', function() { if (!state.isSyncing) fullSync(); });
 
       // ============================================
-      // OPEN BOOK
+      // OPEN BOOK - LOAD REAL PDF VIA BASE64
       // ============================================
       async function openBook(fileId, title, url) {
         stopAutoSync();
         state.currentBook = { fileId: fileId, title: title, url: url };
         state.pdfDoc = null;
-        state.totalPages = 10;
-        state.totalSpreads = 5;
+        state.totalPages = 0;
+        state.totalSpreads = 0;
         state.currentSpread = 0;
         state.isFlipping = false;
+        state.pdfBase64 = null;
 
         DOM.readerBookTitle.textContent = title;
         DOM.readerView.classList.add('active');
@@ -825,39 +868,80 @@
         DOM.pageIndicator.textContent = '0 / 0';
         updateNav();
 
-        showReaderLoading(true, 'Loading PDF (Base64)...', 10);
+        showReaderLoading(true, 'Menghubungi server...', 5);
 
         try {
+          // Step 1: Get PDF info
           var infoUrl = WEBAPP_URL + '?action=getPDFInfo&fileId=' + fileId;
           var infoRes = await fetch(infoUrl);
           var infoData = await infoRes.json();
 
-          if (!infoData.success) throw new Error('Cannot get PDF info');
+          if (!infoData.success) throw new Error('Gagal mendapatkan info PDF');
 
           var totalChunks = infoData.totalChunks;
           var fullBase64 = '';
 
+          // Step 2: Download all chunks
           for (var i = 0; i < totalChunks; i++) {
             var chunkUrl = WEBAPP_URL + '?action=getPDFChunk&fileId=' + fileId + '&chunk=' + i;
             var chunkRes = await fetch(chunkUrl);
             var chunkData = await chunkRes.json();
-            if (!chunkData.success) throw new Error('Chunk ' + i + ' failed');
+            if (!chunkData.success) throw new Error('Chunk ' + i + ' gagal');
             fullBase64 += chunkData.data;
-            showReaderLoading(true, 'Downloading ' + (i + 1) + '/' + totalChunks + '...', 10 + Math.round(((i + 1) / totalChunks) * 40));
+            showReaderLoading(true, 'Mengunduh ' + (i + 1) + '/' + totalChunks + '...', 5 + Math.round(((i + 1) / totalChunks) * 35));
           }
 
           state.pdfBase64 = fullBase64;
-          showReaderLoading(true, 'Rendering...', 80);
+          console.log('✅ Base64 downloaded, length:', fullBase64.length);
+
+          // Step 3: Wait for PDF.js
+          showReaderLoading(true, 'Menunggu PDF.js...', 45);
+          await waitForPDFJS();
+
+          if (typeof pdfjsLib === 'undefined') {
+            throw new Error('PDF.js tidak tersedia. Gunakan browser lain.');
+          }
+
+          // Step 4: Load PDF from base64
+          showReaderLoading(true, 'Memproses PDF...', 55);
+          
+          var binaryStr = atob(fullBase64);
+          var bytes = new Uint8Array(binaryStr.length);
+          for (var j = 0; j < binaryStr.length; j++) {
+            bytes[j] = binaryStr.charCodeAt(j);
+          }
+
+          var loadingTask = pdfjsLib.getDocument({
+            data: bytes,
+            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+            cMapPacked: true
+          });
+
+          state.pdfDoc = await loadingTask.promise;
+          state.totalPages = state.pdfDoc.numPages;
+          state.totalSpreads = Math.ceil(state.totalPages / 2);
+          state.currentSpread = 0;
+
+          console.log('✅ PDF loaded:', state.totalPages, 'pages');
+
+          // Step 5: Render first spread
+          showReaderLoading(true, 'Merender halaman...', 80);
           await renderSpread(0);
+          
           showReaderLoading(false);
           updateNav();
-          toast('✅ PDF loaded!', 'success', 2000);
+          toast('✅ PDF dimuat! ' + state.totalPages + ' halaman', 'success', 2500);
 
         } catch (e) {
-          console.error('Load error:', e);
-          showReaderLoading(true, 'Failed', 0);
+          console.error('❌ Load error:', e);
+          showReaderLoading(true, 'Gagal memuat', 0);
           DOM.retryBtn.classList.remove('hidden');
-          toast('❌ ' + e.message, 'error', 4000);
+          toast('❌ ' + e.message, 'error', 5000);
+          
+          // Set fallback pages
+          state.totalPages = 10;
+          state.totalSpreads = 5;
+          updateNav();
         }
       }
 
@@ -865,17 +949,23 @@
         var lp = idx * 2 + 1;
         var rp = lp + 1;
 
-        if (lp <= state.totalPages) {
-          renderPageToCanvas(lp, DOM.pdfCanvasLeft, state.pdfBase64);
-          DOM.pageLabelLeft.textContent = 'Page ' + lp;
+        if (state.pdfDoc && lp <= state.totalPages) {
+          await renderPDFPageReal(lp, DOM.pdfCanvasLeft);
+          DOM.pageLabelLeft.textContent = 'Halaman ' + lp;
+        } else if (lp <= state.totalPages) {
+          clearCanvas(DOM.pdfCanvasLeft);
+          DOM.pageLabelLeft.textContent = 'Halaman ' + lp;
         } else {
           clearCanvas(DOM.pdfCanvasLeft);
           DOM.pageLabelLeft.textContent = '';
         }
 
-        if (rp <= state.totalPages) {
-          renderPageToCanvas(rp, DOM.pdfCanvasRight, state.pdfBase64);
-          DOM.pageLabelRight.textContent = 'Page ' + rp;
+        if (state.pdfDoc && rp <= state.totalPages) {
+          await renderPDFPageReal(rp, DOM.pdfCanvasRight);
+          DOM.pageLabelRight.textContent = 'Halaman ' + rp;
+        } else if (rp <= state.totalPages) {
+          clearCanvas(DOM.pdfCanvasRight);
+          DOM.pageLabelRight.textContent = 'Halaman ' + rp;
         } else {
           clearCanvas(DOM.pdfCanvasRight);
           DOM.pageLabelRight.textContent = '';
@@ -892,7 +982,9 @@
         state.isFlipping = true; updateNav();
 
         var nl = (state.currentSpread + 1) * 2 + 1;
-        if (nl <= state.totalPages) renderPageToCanvas(nl, DOM.pdfCanvasBack, state.pdfBase64);
+        if (state.pdfDoc && nl <= state.totalPages) {
+          await renderPDFPageReal(nl, DOM.pdfCanvasBack);
+        }
 
         DOM.pageFlip.style.transition = 'transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1)';
         DOM.pageFlip.style.transform = 'rotateY(-180deg)';
@@ -912,7 +1004,9 @@
         state.isFlipping = true; updateNav();
 
         var pr = state.currentSpread * 2;
-        if (pr <= state.totalPages) renderPageToCanvas(pr, DOM.pdfCanvasBack, state.pdfBase64);
+        if (state.pdfDoc && pr <= state.totalPages) {
+          await renderPDFPageReal(pr, DOM.pdfCanvasBack);
+        }
 
         DOM.pageFlip.style.transition = 'none';
         DOM.pageFlip.style.transform = 'rotateY(-180deg)';
@@ -977,7 +1071,7 @@
       window.addEventListener('resize', function() {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(function() {
-          if (state.currentBook) renderSpread(state.currentSpread);
+          if (state.pdfDoc && state.currentBook) renderSpread(state.currentSpread);
         }, 300);
       });
 
@@ -986,7 +1080,7 @@
 
       // Service Worker
       if ('serviceWorker' in navigator) {
-        var swCode = 'self.addEventListener("install",function(e){e.waitUntil(self.skipWaiting())});self.addEventListener("activate",function(e){e.waitUntil(self.clients.claim())});self.addEventListener("fetch",function(e){e.respondWith(fetch(e.request).then(function(r){var c=r.clone();caches.open("dl-v12").then(function(ca){ca.put(e.request,c)});return r}).catch(function(){return caches.match(e.request)}))});';
+        var swCode = 'self.addEventListener("install",function(e){e.waitUntil(self.skipWaiting())});self.addEventListener("activate",function(e){e.waitUntil(self.clients.claim())});self.addEventListener("fetch",function(e){e.respondWith(fetch(e.request).then(function(r){var c=r.clone();caches.open("dl-v13").then(function(ca){ca.put(e.request,c)});return r}).catch(function(){return caches.match(e.request)}))});';
         var swBlob = new Blob([swCode], { type: 'application/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(function() {});
       }
@@ -994,9 +1088,9 @@
       // ============================================
       // INIT
       // ============================================
-      console.log('📖 Digital Library v12 - Final');
-      console.log('✅ No external dependencies');
-      console.log('✅ Base64 rendering');
+      console.log('📖 Digital Library v13 - Real PDF Render');
+      console.log('✅ PDF.js for real PDF rendering');
+      console.log('✅ Base64 chunked loading');
       console.log('✅ Live sync ready');
 
       updateOnlineStatus();
