@@ -80,75 +80,116 @@
     .btn-back:hover { background: rgba(255,255,255,0.14); }
     .reader-title { flex: 1; color: var(--text); font-size: 0.74rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     
-    /* SINGLE PAGE VIEW */
-    .book-area { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; background: #0a0a0a; }
-    
-    .pdf-zoom-container {
-      width: 100%;
-      flex: 1;
-      overflow: auto;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
+    /* ============ PDF VIEW - THE JOS ============ */
+    .book-area { 
+      flex: 1; 
+      position: relative; 
+      display: flex; 
+      flex-direction: column; 
+      overflow: hidden; 
       background: #1a1a1a;
-      -webkit-overflow-scrolling: touch;
-      scroll-behavior: smooth;
+    }
+    
+    /* Container Utama PDF */
+    .pdf-viewer-wrapper {
+      flex: 1;
       position: relative;
-    }
-    
-    .pdf-zoom-container::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    
-    .pdf-zoom-container::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.15);
-      border-radius: 4px;
-    }
-    
-    .pdf-zoom-container::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    
-    .pdf-viewport {
-      transform-origin: top left;
-      transition: transform 0.2s ease;
-      padding: 16px;
-      min-width: 100%;
-      min-height: 100%;
+      overflow: hidden;
+      cursor: grab;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     
+    .pdf-viewer-wrapper:active {
+      cursor: grabbing;
+    }
+    
+    .pdf-viewer-wrapper.grabbing {
+      cursor: grabbing;
+    }
+    
+    /* Canvas Container - Bisa digeser */
+    .pdf-canvas-container {
+      position: absolute;
+      transform-origin: center center;
+      transition: transform 0.15s ease-out;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    
+    .pdf-canvas-container.no-transition {
+      transition: none !important;
+    }
+    
+    /* Canvas PDF */
     #pdfCanvasSingle {
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-      background: #fff;
       display: block;
+      box-shadow: 
+        0 20px 60px rgba(0,0,0,0.8),
+        0 0 0 1px rgba(255,255,255,0.05),
+        0 0 120px rgba(201,168,124,0.05);
+      background: #fff;
+      border-radius: 2px;
+      pointer-events: none; /* Biar mouse event ke container */
+    }
+    
+    /* Shadow effect untuk buku */
+    .pdf-page-shadow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      box-shadow: 
+        inset 0 0 30px rgba(0,0,0,0.1),
+        0 0 0 2px rgba(0,0,0,0.05);
+      border-radius: 2px;
+    }
+    
+    /* Background pattern */
+    .pdf-viewer-wrapper::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at center, rgba(201,168,124,0.03) 0%, transparent 70%),
+        linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.02) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.02) 75%);
+      background-size: 100% 100%, 3px 3px, 3px 3px, 3px 3px, 3px 3px;
+      background-position: 0 0, 0 0, 1.5px 1.5px, 1.5px 1.5px, 0 0;
+      pointer-events: none;
     }
     
     /* ZOOM CONTROLS */
     .zoom-controls {
       position: absolute;
-      bottom: 8px;
-      right: 8px;
+      bottom: 16px;
+      right: 16px;
       display: flex;
       align-items: center;
       gap: 6px;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(10px);
-      padding: 6px 10px;
-      border-radius: 20px;
+      background: rgba(0,0,0,0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 8px 12px;
+      border-radius: 24px;
       z-index: 70;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
     
     .zoom-btn {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
       color: var(--text);
       font-size: 0.85rem;
       cursor: pointer;
@@ -157,34 +198,76 @@
       justify-content: center;
       transition: all 0.2s;
       padding: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .zoom-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(201,168,124,0.3), transparent);
+      opacity: 0;
+      transition: opacity 0.2s;
     }
     
     .zoom-btn:hover {
-      background: rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.12);
       border-color: var(--accent);
-      transform: scale(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(201,168,124,0.3);
+    }
+    
+    .zoom-btn:hover::before {
+      opacity: 1;
     }
     
     .zoom-btn:active {
-      transform: scale(0.95);
+      transform: scale(0.92);
     }
     
     .zoom-level {
       color: var(--text);
       font-size: 0.7rem;
-      min-width: 42px;
+      min-width: 44px;
       text-align: center;
       font-weight: 600;
+      letter-spacing: 0.5px;
     }
     
     .download-btn {
-      background: rgba(39, 174, 96, 0.2);
-      border-color: rgba(39, 174, 96, 0.4);
+      background: rgba(39, 174, 96, 0.15);
+      border-color: rgba(39, 174, 96, 0.3);
     }
     
     .download-btn:hover {
-      background: rgba(39, 174, 96, 0.3);
+      background: rgba(39, 174, 96, 0.25);
       border-color: var(--success);
+      box-shadow: 0 4px 12px rgba(39,174,96,0.3);
+    }
+    
+    /* Page indicator floating */
+    .page-floating-indicator {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(10px);
+      padding: 6px 16px;
+      border-radius: 16px;
+      font-size: 0.7rem;
+      color: var(--text);
+      z-index: 65;
+      border: 1px solid rgba(255,255,255,0.08);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-family: Georgia, serif;
+    }
+    
+    .page-floating-indicator.visible {
+      opacity: 1;
     }
     
     /* FULLSCREEN */
@@ -195,18 +278,13 @@
       background: #000;
     }
     
-    .book-area:fullscreen .pdf-zoom-container,
-    .book-area:-webkit-full-screen .pdf-zoom-container {
-      background: #000;
-    }
-    
     .book-area:fullscreen .zoom-controls,
     .book-area:-webkit-full-screen .zoom-controls {
-      bottom: 16px;
-      right: 16px;
+      bottom: 24px;
+      right: 24px;
     }
     
-    /* ============ LOADING OVERLAY - THE JOS ============ */
+    /* ============ LOADING OVERLAY ============ */
     .load-overlay { 
       position: absolute; 
       inset: 0; 
@@ -221,7 +299,6 @@
     }
     .load-overlay.hidden { display: none; }
     
-    /* Spinner Ring Animation */
     .spinner-container {
       position: relative;
       width: 80px;
@@ -281,7 +358,6 @@
       50% { transform: translate(-50%, -50%) scale(1.2); }
     }
     
-    /* Progress Bar */
     .progress-container {
       width: 200px;
       height: 4px;
@@ -305,7 +381,6 @@
       50% { opacity: 0.6; }
     }
     
-    /* Loading Text */
     .load-title {
       color: var(--text);
       font-size: 1rem;
@@ -342,7 +417,6 @@
       animation: pulse 1s infinite;
     }
     
-    /* Download Stats */
     .download-stats {
       display: flex;
       gap: 16px;
@@ -361,7 +435,6 @@
       font-size: 0.7rem;
     }
     
-    /* Retry Button */
     .retry-btn { 
       background: var(--accent); 
       color: #1a1a1a; 
@@ -405,9 +478,9 @@
       .reader-topbar { padding: 4px 8px; }
       .reader-bottombar { padding: 6px 10px; gap: 10px; }
       .nav-btn { width: 34px; height: 34px; font-size: 0.9rem; }
-      .pdf-viewport { padding: 8px; }
-      .zoom-controls { bottom: 6px; right: 6px; padding: 4px 8px; gap: 4px; }
-      .zoom-btn { width: 28px; height: 28px; font-size: 0.75rem; }
+      .zoom-controls { bottom: 10px; right: 10px; padding: 6px 10px; gap: 4px; }
+      .zoom-btn { width: 30px; height: 30px; font-size: 0.75rem; }
+      .pdf-canvas-container { padding: 20px; }
       .spinner-container { width: 60px; height: 60px; }
       .progress-container { width: 160px; }
     }
@@ -450,22 +523,27 @@
         </div>
         
         <div class="book-area">
-          <div class="pdf-zoom-container" id="pdfZoomContainer">
-            <div class="pdf-viewport" id="pdfViewport">
+          <!-- PDF Viewer dengan Drag Support -->
+          <div class="pdf-viewer-wrapper" id="pdfViewerWrapper">
+            <div class="pdf-canvas-container" id="pdfCanvasContainer">
               <canvas id="pdfCanvasSingle"></canvas>
+              <div class="pdf-page-shadow"></div>
             </div>
+            <div class="page-floating-indicator" id="pageFloatingIndicator">Halaman 1</div>
           </div>
           
+          <!-- Zoom Controls -->
           <div class="zoom-controls" id="zoomControls">
-            <button class="zoom-btn" id="btnZoomOut" title="Zoom Out">🔍−</button>
+            <button class="zoom-btn" id="btnZoomOut" title="Zoom Out (Ctrl+-)">🔍−</button>
             <span class="zoom-level" id="zoomLevel">100%</span>
-            <button class="zoom-btn" id="btnZoomIn" title="Zoom In">🔍+</button>
-            <button class="zoom-btn" id="btnZoomReset" title="Reset Zoom">↺</button>
-            <button class="zoom-btn" id="btnFullscreen" title="Fullscreen">⛶</button>
+            <button class="zoom-btn" id="btnZoomIn" title="Zoom In (Ctrl++)">🔍+</button>
+            <button class="zoom-btn" id="btnZoomReset" title="Reset Zoom (Ctrl+0)">↺</button>
+            <button class="zoom-btn" id="btnZoomFit" title="Fit to Screen">⊡</button>
+            <button class="zoom-btn" id="btnFullscreen" title="Fullscreen (F)">⛶</button>
             <button class="zoom-btn download-btn" id="btnDownload" title="Download PDF">💾</button>
           </div>
           
-          <!-- LOADING OVERLAY - THE JOS -->
+          <!-- Loading Overlay -->
           <div class="load-overlay hidden" id="readerLoading">
             <div class="spinner-container">
               <div class="spinner-ring"></div>
@@ -526,11 +604,18 @@
         pdfCache: {},
         zoomLevel: 1.0,
         zoomMin: 0.5,
-        zoomMax: 3.0,
+        zoomMax: 5.0,
         zoomStep: 0.25,
         pdfBase64: null,
         downloadStartTime: 0,
-        downloadBytes: 0
+        downloadBytes: 0,
+        // Drag state
+        isDragging: false,
+        dragStartX: 0,
+        dragStartY: 0,
+        translateX: 0,
+        translateY: 0,
+        hasMoved: false
       };
 
       function $(id) { return document.getElementById(id); }
@@ -549,14 +634,16 @@
         DOM.statSize = $('statSize');
         DOM.statSpeed = $('statSpeed');
         DOM.retryBtn = $('retryBtn');
-        DOM.pdfZoomContainer = $('pdfZoomContainer');
-        DOM.pdfViewport = $('pdfViewport');
+        DOM.pdfViewerWrapper = $('pdfViewerWrapper');
+        DOM.pdfCanvasContainer = $('pdfCanvasContainer');
         DOM.pdfCanvasSingle = $('pdfCanvasSingle');
+        DOM.pageFloatingIndicator = $('pageFloatingIndicator');
         DOM.zoomControls = $('zoomControls');
         DOM.zoomLevel = $('zoomLevel');
         DOM.btnZoomIn = $('btnZoomIn');
         DOM.btnZoomOut = $('btnZoomOut');
         DOM.btnZoomReset = $('btnZoomReset');
+        DOM.btnZoomFit = $('btnZoomFit');
         DOM.btnFullscreen = $('btnFullscreen');
         DOM.btnDownload = $('btnDownload');
         DOM.pageIndicator = $('pageIndicator'); DOM.readerBookTitle = $('readerBookTitle');
@@ -580,7 +667,6 @@
 
       function showLibLoading(s) { if (DOM.libLoading) DOM.libLoading.classList.toggle('hidden', !s); }
       
-      // ============ LOADING VIEW - THE JOS ============
       function updateLoadingState(stage, title, icon, text, status, progress) {
         if (DOM.loadingTitle) DOM.loadingTitle.textContent = title || 'Memproses';
         if (DOM.loadingIcon) DOM.loadingIcon.textContent = icon || '📖';
@@ -640,6 +726,9 @@
         if (DOM.btnNext) DOM.btnNext.disabled = state.currentPage >= state.totalPages || state.isFlipping;
         if (DOM.pageIndicator) {
           DOM.pageIndicator.textContent = state.currentPage + ' / ' + state.totalPages;
+        }
+        if (DOM.pageFloatingIndicator) {
+          DOM.pageFloatingIndicator.textContent = 'Halaman ' + state.currentPage + ' dari ' + state.totalPages;
         }
       }
 
@@ -763,11 +852,16 @@
         state.pdfBase64 = null;
         state.downloadStartTime = 0;
         state.downloadBytes = 0;
+        
+        // Reset drag position
+        state.translateX = 0;
+        state.translateY = 0;
 
         if (DOM.readerBookTitle) DOM.readerBookTitle.textContent = title;
         if (DOM.readerView) DOM.readerView.classList.add('active');
         clearCanvas(DOM.pdfCanvasSingle);
         updateNav();
+        resetViewPosition();
         updateZoom(1.0, false);
 
         // CHECK CACHE FIRST
@@ -800,6 +894,7 @@
             await renderSinglePage(1);
             showReaderLoading(false);
             updateNav();
+            fitToScreen();
             toast('⚡ Loaded from cache!', 'success', 2000);
             return;
           }
@@ -858,14 +953,12 @@
           
           state.pdfBase64 = fullBase64;
           
-          // PROCESSING
           updateLoadingState('processing', 'Memproses PDF', '⚙️', 'Mengkonversi data...', 'Processing...', 75);
           await sleep(300);
           
           updateLoadingState('decoding', 'Mendekode PDF', '🔓', 'Membaca struktur dokumen...', 'Decoding...', 80);
           await sleep(200);
           
-          // RENDER PDF
           updateLoadingState('rendering', 'Merender PDF', '🎨', 'Menyiapkan halaman pertama...', 'Rendering...', 85);
           
           var binaryStr = atob(fullBase64);
@@ -896,6 +989,7 @@
             await renderSinglePage(1);
             showReaderLoading(false);
             updateNav();
+            fitToScreen();
             toast('✅ ' + state.totalPages + ' halaman', 'success', 2000);
           } else {
             updateLoadingState('fallback', 'Mode Preview', '⚠️', 'PDF.js tidak tersedia', 'Fallback mode', 100);
@@ -903,6 +997,7 @@
             renderFallbackPage(1);
             showReaderLoading(false);
             updateNav();
+            fitToScreen();
             toast('⚠️ Preview mode', 'error', 3000);
           }
 
@@ -947,6 +1042,20 @@
         });
       }
 
+      // ============ VIEW POSITION ============
+      function resetViewPosition() {
+        state.translateX = 0;
+        state.translateY = 0;
+        applyViewTransform();
+      }
+      
+      function applyViewTransform() {
+        if (DOM.pdfCanvasContainer) {
+          var scale = state.zoomLevel;
+          DOM.pdfCanvasContainer.style.transform = 'translate(' + state.translateX + 'px, ' + state.translateY + 'px) scale(' + scale + ')';
+        }
+      }
+
       // ============ RENDER FUNCTIONS ============
       async function renderSinglePage(pageNum) {
         if (!state.currentBook || !pageNum) return;
@@ -960,12 +1069,6 @@
         }
         
         updateNav();
-        
-        setTimeout(function() {
-          if (state.zoomLevel === 1.0) {
-            zoomFitToWidth();
-          }
-        }, 100);
       }
 
       async function renderPDFPage(num, canvas) {
@@ -974,7 +1077,7 @@
         try {
           var page = await state.pdfDoc.getPage(num);
           
-          var baseScale = 1.5;
+          var baseScale = 2.0; // Higher base for better quality
           var zoomScale = state.zoomLevel || 1.0;
           var scale = baseScale * zoomScale;
           
@@ -1005,17 +1108,17 @@
         if (!DOM.pdfCanvasSingle) return;
         var canvas = DOM.pdfCanvasSingle;
         var ctx = canvas.getContext('2d');
-        var w = canvas.parentElement.clientWidth - 10 || 600;
-        var h = canvas.parentElement.clientHeight - 10 || 800;
+        var w = 800;
+        var h = 1000;
         canvas.width = w; canvas.height = h;
         canvas.style.width = w + 'px';
         canvas.style.height = h + 'px';
         ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
         ctx.fillStyle = '#333'; ctx.textAlign = 'center';
-        ctx.font = 'bold 16px Georgia'; ctx.fillText('Halaman ' + num, w/2, h/3);
-        ctx.font = '12px Georgia'; ctx.fillStyle = '#666';
-        ctx.fillText(state.currentBook ? state.currentBook.title : 'PDF B2:B', w/2, h/3+28);
-        ctx.font = 'italic 9px Georgia'; ctx.fillText('— ' + num + ' —', w/2, h-18);
+        ctx.font = 'bold 20px Georgia'; ctx.fillText('Halaman ' + num, w/2, h/3);
+        ctx.font = '14px Georgia'; ctx.fillStyle = '#666';
+        ctx.fillText(state.currentBook ? state.currentBook.title : 'PDF B2:B', w/2, h/3+30);
+        ctx.font = 'italic 11px Georgia'; ctx.fillText('— ' + num + ' —', w/2, h-20);
       }
 
       // ============ ZOOM FUNCTIONS ============
@@ -1024,9 +1127,7 @@
         
         state.zoomLevel = Math.max(state.zoomMin, Math.min(state.zoomMax, newZoom));
         
-        if (DOM.pdfViewport) {
-          DOM.pdfViewport.style.transform = 'scale(' + state.zoomLevel + ')';
-        }
+        applyViewTransform();
         
         if (DOM.zoomLevel) {
           DOM.zoomLevel.textContent = Math.round(state.zoomLevel * 100) + '%';
@@ -1043,28 +1144,50 @@
 
       function zoomIn() {
         updateZoom(state.zoomLevel + state.zoomStep);
-        toast('🔍 ' + Math.round(state.zoomLevel * 100) + '%', 'info', 1500);
+        showFloatingIndicator('🔍 ' + Math.round(state.zoomLevel * 100) + '%');
       }
 
       function zoomOut() {
         updateZoom(state.zoomLevel - state.zoomStep);
-        toast('🔍 ' + Math.round(state.zoomLevel * 100) + '%', 'info', 1500);
+        showFloatingIndicator('🔍 ' + Math.round(state.zoomLevel * 100) + '%');
       }
 
       function zoomReset() {
+        resetViewPosition();
         updateZoom(1.0);
-        toast('↺ Zoom Reset', 'success', 1500);
+        fitToScreen();
+        showFloatingIndicator('↺ Zoom Reset');
       }
 
-      function zoomFitToWidth() {
-        if (!DOM.pdfZoomContainer || !DOM.pdfCanvasSingle) return;
+      function fitToScreen() {
+        if (!DOM.pdfViewerWrapper || !DOM.pdfCanvasSingle) return;
         
-        var containerWidth = DOM.pdfZoomContainer.clientWidth - 32;
-        var canvasWidth = DOM.pdfCanvasSingle.width || 600;
+        var wrapperW = DOM.pdfViewerWrapper.clientWidth;
+        var wrapperH = DOM.pdfViewerWrapper.clientHeight;
+        var canvasW = DOM.pdfCanvasSingle.width || 800;
+        var canvasH = DOM.pdfCanvasSingle.height || 1000;
         
-        if (canvasWidth > 0) {
-          var fitZoom = containerWidth / canvasWidth;
-          updateZoom(Math.min(fitZoom, state.zoomMax));
+        if (canvasW > 0 && canvasH > 0) {
+          var padding = 40;
+          var fitW = (wrapperW - padding) / (canvasW / state.zoomLevel);
+          var fitH = (wrapperH - padding) / (canvasH / state.zoomLevel);
+          var fitZoom = Math.min(fitW, fitH, state.zoomMax);
+          
+          resetViewPosition();
+          updateZoom(fitZoom);
+        }
+        
+        showFloatingIndicator('⊡ Fit to Screen');
+      }
+      
+      function showFloatingIndicator(text) {
+        if (DOM.pageFloatingIndicator) {
+          DOM.pageFloatingIndicator.textContent = text;
+          DOM.pageFloatingIndicator.classList.add('visible');
+          clearTimeout(state._fiTimer);
+          state._fiTimer = setTimeout(function() {
+            DOM.pageFloatingIndicator.classList.remove('visible');
+          }, 1500);
         }
       }
 
@@ -1177,13 +1300,9 @@
         state.isFlipping = true;
         state.currentPage++;
         await renderSinglePage(state.currentPage);
-        
-        setTimeout(function() {
-          if (state.zoomLevel === 1.0) zoomFitToWidth();
-        }, 150);
-        
         state.isFlipping = false;
         updateNav();
+        showFloatingIndicator('Halaman ' + state.currentPage + ' →');
       }
 
       async function flipPrev() {
@@ -1191,19 +1310,16 @@
         state.isFlipping = true;
         state.currentPage--;
         await renderSinglePage(state.currentPage);
-        
-        setTimeout(function() {
-          if (state.zoomLevel === 1.0) zoomFitToWidth();
-        }, 150);
-        
         state.isFlipping = false;
         updateNav();
+        showFloatingIndicator('← Halaman ' + state.currentPage);
       }
 
       function goBack() {
         if (DOM.readerView) DOM.readerView.classList.remove('active');
         state.pdfDoc = null; state.currentBook = null;
         state.pdfBase64 = null;
+        resetViewPosition();
       }
 
       function loadZoomPreference() {
@@ -1215,20 +1331,128 @@
         } catch(e) {}
       }
 
+      // ============ DRAG TO PAN - THE JOS ============
+      function setupDragToPan() {
+        if (!DOM.pdfViewerWrapper) return;
+        
+        var wrapper = DOM.pdfViewerWrapper;
+        
+        // Mouse events
+        wrapper.addEventListener('mousedown', function(e) {
+          if (e.button !== 0) return; // Only left click
+          
+          state.isDragging = true;
+          state.hasMoved = false;
+          state.dragStartX = e.clientX - state.translateX;
+          state.dragStartY = e.clientY - state.translateY;
+          
+          wrapper.classList.add('grabbing');
+          if (DOM.pdfCanvasContainer) {
+            DOM.pdfCanvasContainer.classList.add('no-transition');
+          }
+          
+          e.preventDefault();
+        });
+        
+        window.addEventListener('mousemove', function(e) {
+          if (!state.isDragging) return;
+          
+          var dx = e.clientX - state.dragStartX;
+          var dy = e.clientY - state.dragStartY;
+          
+          if (Math.abs(dx - state.translateX) > 2 || Math.abs(dy - state.translateY) > 2) {
+            state.hasMoved = true;
+          }
+          
+          state.translateX = dx;
+          state.translateY = dy;
+          applyViewTransform();
+        });
+        
+        window.addEventListener('mouseup', function(e) {
+          if (!state.isDragging) return;
+          
+          state.isDragging = false;
+          wrapper.classList.remove('grabbing');
+          
+          if (DOM.pdfCanvasContainer) {
+            DOM.pdfCanvasContainer.classList.remove('no-transition');
+          }
+        });
+        
+        // Touch events for mobile
+        wrapper.addEventListener('touchstart', function(e) {
+          if (e.touches.length === 1) {
+            state.isDragging = true;
+            state.hasMoved = false;
+            state.dragStartX = e.touches[0].clientX - state.translateX;
+            state.dragStartY = e.touches[0].clientY - state.translateY;
+            
+            if (DOM.pdfCanvasContainer) {
+              DOM.pdfCanvasContainer.classList.add('no-transition');
+            }
+          }
+        }, { passive: false });
+        
+        wrapper.addEventListener('touchmove', function(e) {
+          if (!state.isDragging || e.touches.length !== 1) return;
+          
+          var dx = e.touches[0].clientX - state.dragStartX;
+          var dy = e.touches[0].clientY - state.dragStartY;
+          
+          if (Math.abs(dx - state.translateX) > 2 || Math.abs(dy - state.translateY) > 2) {
+            state.hasMoved = true;
+          }
+          
+          state.translateX = dx;
+          state.translateY = dy;
+          applyViewTransform();
+        });
+        
+        wrapper.addEventListener('touchend', function(e) {
+          state.isDragging = false;
+          
+          if (DOM.pdfCanvasContainer) {
+            DOM.pdfCanvasContainer.classList.remove('no-transition');
+          }
+        });
+        
+        // Click event for page navigation (only if not dragged)
+        wrapper.addEventListener('click', function(e) {
+          if (state.hasMoved) {
+            state.hasMoved = false;
+            return;
+          }
+          
+          if (!state.currentBook || state.isFlipping) return;
+          
+          var rect = wrapper.getBoundingClientRect();
+          var x = e.clientX - rect.left;
+          
+          if (x < rect.width * 0.3) {
+            flipPrev();
+          } else if (x > rect.width * 0.7) {
+            flipNext();
+          }
+        });
+      }
+
       // ============ EVENTS ============
       function safeOn(el, ev, fn) { if (el) el.addEventListener(ev, fn); }
 
       initDOM();
       loadZoomPreference();
+      setupDragToPan();
       
-      safeOn(DOM.btnPrev, 'click', flipPrev);
-      safeOn(DOM.btnNext, 'click', flipNext);
+      safeOn(DOM.btnPrev, 'click', function(e) { e.stopPropagation(); flipPrev(); });
+      safeOn(DOM.btnNext, 'click', function(e) { e.stopPropagation(); flipNext(); });
       safeOn(DOM.btnBack, 'click', goBack);
-      safeOn(DOM.btnZoomIn, 'click', zoomIn);
-      safeOn(DOM.btnZoomOut, 'click', zoomOut);
-      safeOn(DOM.btnZoomReset, 'click', zoomReset);
-      safeOn(DOM.btnFullscreen, 'click', toggleFullscreen);
-      safeOn(DOM.btnDownload, 'click', downloadPDF);
+      safeOn(DOM.btnZoomIn, 'click', function(e) { e.stopPropagation(); zoomIn(); });
+      safeOn(DOM.btnZoomOut, 'click', function(e) { e.stopPropagation(); zoomOut(); });
+      safeOn(DOM.btnZoomReset, 'click', function(e) { e.stopPropagation(); zoomReset(); });
+      safeOn(DOM.btnZoomFit, 'click', function(e) { e.stopPropagation(); fitToScreen(); });
+      safeOn(DOM.btnFullscreen, 'click', function(e) { e.stopPropagation(); toggleFullscreen(); });
+      safeOn(DOM.btnDownload, 'click', function(e) { e.stopPropagation(); downloadPDF(); });
       
       safeOn(DOM.retryBtn, 'click', function() {
         if (state.currentBook) openBook(state.currentBook.fileId, state.currentBook.title, state.currentBook.url);
@@ -1262,8 +1486,9 @@
         }
       });
 
-      if (DOM.pdfZoomContainer) {
-        DOM.pdfZoomContainer.addEventListener('wheel', function(e) {
+      // Zoom with mouse wheel
+      if (DOM.pdfViewerWrapper) {
+        DOM.pdfViewerWrapper.addEventListener('wheel', function(e) {
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             if (e.deltaY < 0) {
@@ -1275,21 +1500,23 @@
         }, { passive: false });
       }
 
-      if (DOM.pdfZoomContainer) {
+      // Pinch zoom for mobile
+      if (DOM.pdfViewerWrapper) {
         var initialDistance = 0;
         var initialZoom = 1;
         
-        DOM.pdfZoomContainer.addEventListener('touchstart', function(e) {
+        DOM.pdfViewerWrapper.addEventListener('touchstart', function(e) {
           if (e.touches.length === 2) {
             initialDistance = Math.hypot(
               e.touches[0].clientX - e.touches[1].clientX,
               e.touches[0].clientY - e.touches[1].clientY
             );
             initialZoom = state.zoomLevel;
+            state.isDragging = false;
           }
         });
         
-        DOM.pdfZoomContainer.addEventListener('touchmove', function(e) {
+        DOM.pdfViewerWrapper.addEventListener('touchmove', function(e) {
           if (e.touches.length === 2) {
             e.preventDefault();
             var currentDistance = Math.hypot(
@@ -1303,23 +1530,14 @@
         }, { passive: false });
       }
 
-      if (DOM.pdfZoomContainer) {
-        DOM.pdfZoomContainer.addEventListener('dblclick', function(e) {
+      // Double tap untuk zoom
+      if (DOM.pdfViewerWrapper) {
+        DOM.pdfViewerWrapper.addEventListener('dblclick', function(e) {
           if (state.zoomLevel !== 1.0) {
             zoomReset();
           } else {
             updateZoom(2.0);
           }
-        });
-      }
-
-      if (DOM.pdfZoomContainer) {
-        DOM.pdfZoomContainer.addEventListener('click', function(e) {
-          if (!state.currentBook || state.isFlipping) return;
-          var rect = DOM.pdfZoomContainer.getBoundingClientRect();
-          var x = e.clientX - rect.left;
-          if (x < rect.width * 0.25) flipPrev();
-          else if (x > rect.width * 0.75) flipNext();
         });
       }
 
@@ -1331,7 +1549,9 @@
       window.addEventListener('resize', function() {
         clearTimeout(state._rt);
         state._rt = setTimeout(function() {
-          if (state.currentBook && state.pdfDoc) renderSinglePage(state.currentPage);
+          if (state.currentBook && state.pdfDoc) {
+            renderSinglePage(state.currentPage);
+          }
         }, 300);
       });
 
@@ -1344,10 +1564,11 @@
       }
 
       console.log('📖 Digital Library - The Jos Edition');
-      console.log('✅ Beautiful loading animation');
-      console.log('✅ Download progress tracking');
-      console.log('✅ Multi-stage loading status');
-      console.log('✅ Cache enabled (max ' + PDF_CACHE_MAX + ' PDFs)');
+      console.log('✅ Drag to pan with mouse (click-hold-drag)');
+      console.log('✅ Fit to screen on load');
+      console.log('✅ Beautiful zoom controls');
+      console.log('✅ Floating page indicator');
+      console.log('✅ Fullscreen support');
       
       fetchBooks(false);
       state.syncTimer = setInterval(function() { if (!state.currentBook) fetchBooks(true); }, 10000);
