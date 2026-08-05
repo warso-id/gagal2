@@ -206,13 +206,183 @@
       right: 16px;
     }
     
-    /* LOADING OVERLAY */
-    .load-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.94); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 80; }
+    /* ============ LOADING OVERLAY - THE JOS ============ */
+    .load-overlay { 
+      position: absolute; 
+      inset: 0; 
+      background: rgba(10,10,10,0.98); 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      z-index: 80;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
     .load-overlay.hidden { display: none; }
-    .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.08); border-top: 3px solid var(--accent); border-radius: 50%; animation: spinAnim 0.7s linear infinite; }
-    @keyframes spinAnim { to { transform: rotate(360deg); } }
-    .load-text { color: var(--text-secondary); margin-top: 10px; font-size: 0.72rem; }
-    .retry-btn { background: var(--accent); color: #1a1a1a; border: none; padding: 7px 18px; border-radius: 18px; cursor: pointer; font-weight: 600; font-size: 0.72rem; margin-top: 12px; font-family: inherit; }
+    
+    /* Spinner Ring Animation */
+    .spinner-container {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin-bottom: 20px;
+    }
+    
+    .spinner-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      animation: spinAnim 1.2s linear infinite;
+    }
+    
+    .spinner-ring:nth-child(1) {
+      border-top-color: var(--accent);
+      animation-duration: 1s;
+    }
+    
+    .spinner-ring:nth-child(2) {
+      width: 70%;
+      height: 70%;
+      top: 15%;
+      left: 15%;
+      border-right-color: var(--success);
+      animation-duration: 1.5s;
+      animation-direction: reverse;
+    }
+    
+    .spinner-ring:nth-child(3) {
+      width: 40%;
+      height: 40%;
+      top: 30%;
+      left: 30%;
+      border-bottom-color: var(--warning);
+      animation-duration: 2s;
+    }
+    
+    .spinner-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.5rem;
+      animation: bounceIcon 1s ease-in-out infinite;
+    }
+    
+    @keyframes spinAnim { 
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes bounceIcon {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.2); }
+    }
+    
+    /* Progress Bar */
+    .progress-container {
+      width: 200px;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 16px 0;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      width: 0%;
+      animation: progressPulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes progressPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    
+    /* Loading Text */
+    .load-title {
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    
+    .load-text { 
+      color: var(--text-secondary); 
+      font-size: 0.72rem;
+      text-align: center;
+      max-width: 250px;
+      line-height: 1.4;
+    }
+    
+    .load-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 4px 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      font-size: 0.65rem;
+      color: var(--accent);
+    }
+    
+    .load-status .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1s infinite;
+    }
+    
+    /* Download Stats */
+    .download-stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: 0.6rem;
+      color: var(--text-secondary);
+    }
+    
+    .download-stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .download-stat .icon {
+      font-size: 0.7rem;
+    }
+    
+    /* Retry Button */
+    .retry-btn { 
+      background: var(--accent); 
+      color: #1a1a1a; 
+      border: none; 
+      padding: 8px 20px; 
+      border-radius: 20px; 
+      cursor: pointer; 
+      font-weight: 600; 
+      font-size: 0.72rem; 
+      margin-top: 16px; 
+      font-family: inherit;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .retry-btn:hover {
+      background: #d4b88c;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(201,168,124,0.3);
+    }
     .retry-btn.hidden { display: none; }
     
     .reader-bottombar { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 16px; background: rgba(0,0,0,0.9); flex-shrink: 0; z-index: 60; }
@@ -238,6 +408,8 @@
       .pdf-viewport { padding: 8px; }
       .zoom-controls { bottom: 6px; right: 6px; padding: 4px 8px; gap: 4px; }
       .zoom-btn { width: 28px; height: 28px; font-size: 0.75rem; }
+      .spinner-container { width: 60px; height: 60px; }
+      .progress-container { width: 160px; }
     }
     @media (max-width: 480px) {
       .book-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
@@ -258,7 +430,16 @@
     <div class="main-content">
       <div class="library-view" id="libraryView">
         <div class="book-scroll" id="bookScroll">
-          <div class="load-overlay" id="libLoading"><div class="spinner"></div><div class="load-text">Syncing B2:B...</div></div>
+          <div class="load-overlay" id="libLoading">
+            <div class="spinner-container">
+              <div class="spinner-ring"></div>
+              <div class="spinner-ring"></div>
+              <div class="spinner-ring"></div>
+              <div class="spinner-icon">📚</div>
+            </div>
+            <div class="load-title">Memuat Perpustakaan</div>
+            <div class="load-text">Mengambil data dari Google Spreadsheet...</div>
+          </div>
         </div>
       </div>
 
@@ -284,10 +465,36 @@
             <button class="zoom-btn download-btn" id="btnDownload" title="Download PDF">💾</button>
           </div>
           
-          <div class="load-overlay" id="readerLoading">
-            <div class="spinner"></div>
-            <div class="load-text" id="readerLoadText">Membuka PDF...</div>
-            <button class="retry-btn hidden" id="retryBtn">🔄 Coba Lagi</button>
+          <!-- LOADING OVERLAY - THE JOS -->
+          <div class="load-overlay hidden" id="readerLoading">
+            <div class="spinner-container">
+              <div class="spinner-ring"></div>
+              <div class="spinner-ring"></div>
+              <div class="spinner-ring"></div>
+              <div class="spinner-icon" id="loadingIcon">📖</div>
+            </div>
+            <div class="load-title" id="loadingTitle">Membuka PDF</div>
+            <div class="progress-container">
+              <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="load-text" id="readerLoadText">Mempersiapkan dokumen...</div>
+            <div class="load-status">
+              <span class="dot"></span>
+              <span id="loadingStatus">Menghubungi server...</span>
+            </div>
+            <div class="download-stats" id="downloadStats" style="display:none;">
+              <div class="download-stat">
+                <span class="icon">📦</span>
+                <span id="statSize">0 KB</span>
+              </div>
+              <div class="download-stat">
+                <span class="icon">⚡</span>
+                <span id="statSpeed">0 KB/s</span>
+              </div>
+            </div>
+            <button class="retry-btn hidden" id="retryBtn">
+              <span>🔄</span> Coba Lagi
+            </button>
           </div>
         </div>
         
@@ -309,20 +516,21 @@
       var SHEET_NAME = 'E-Book Library';
       
       // Cache configuration
-      var PDF_CACHE_MAX = 5; // Maksimal 5 PDF di cache
-      var PDF_CACHE_TTL = 30 * 60 * 1000; // 30 menit
+      var PDF_CACHE_MAX = 5;
+      var PDF_CACHE_TTL = 30 * 60 * 1000;
       
       var state = {
         books: [], currentBook: null, pdfDoc: null,
         totalPages: 10, currentPage: 1, isFlipping: false,
         syncTimer: null,
-        pdfCache: {}, // Cache untuk PDF: { fileId: { base64, timestamp, pages } }
-        // ZOOM STATE
-        zoomLevel: 1.0, // 1.0 = 100%
+        pdfCache: {},
+        zoomLevel: 1.0,
         zoomMin: 0.5,
         zoomMax: 3.0,
         zoomStep: 0.25,
-        pdfBase64: null // Simpan untuk download
+        pdfBase64: null,
+        downloadStartTime: 0,
+        downloadBytes: 0
       };
 
       function $(id) { return document.getElementById(id); }
@@ -333,6 +541,13 @@
         DOM.libLoading = $('libLoading'); DOM.bookScroll = $('bookScroll');
         DOM.refreshBtn = $('refreshBtn'); DOM.readerView = $('readerView');
         DOM.readerLoading = $('readerLoading'); DOM.readerLoadText = $('readerLoadText');
+        DOM.loadingTitle = $('loadingTitle');
+        DOM.loadingIcon = $('loadingIcon');
+        DOM.loadingStatus = $('loadingStatus');
+        DOM.progressBar = $('progressBar');
+        DOM.downloadStats = $('downloadStats');
+        DOM.statSize = $('statSize');
+        DOM.statSpeed = $('statSpeed');
         DOM.retryBtn = $('retryBtn');
         DOM.pdfZoomContainer = $('pdfZoomContainer');
         DOM.pdfViewport = $('pdfViewport');
@@ -365,11 +580,59 @@
 
       function showLibLoading(s) { if (DOM.libLoading) DOM.libLoading.classList.toggle('hidden', !s); }
       
-      function showReaderLoading(s, txt) {
+      // ============ LOADING VIEW - THE JOS ============
+      function updateLoadingState(stage, title, icon, text, status, progress) {
+        if (DOM.loadingTitle) DOM.loadingTitle.textContent = title || 'Memproses';
+        if (DOM.loadingIcon) DOM.loadingIcon.textContent = icon || '📖';
+        if (DOM.readerLoadText) DOM.readerLoadText.textContent = text || '';
+        if (DOM.loadingStatus) DOM.loadingStatus.textContent = status || '';
+        if (DOM.progressBar) DOM.progressBar.style.width = (progress || 0) + '%';
+      }
+
+      function showReaderLoading(s, options) {
         if (!DOM.readerLoading) return;
-        DOM.readerLoading.classList.toggle('hidden', !s);
-        if (txt && DOM.readerLoadText) DOM.readerLoadText.textContent = txt;
-        if (s && DOM.retryBtn) DOM.retryBtn.classList.add('hidden');
+        
+        if (s) {
+          DOM.readerLoading.classList.remove('hidden');
+          DOM.retryBtn.classList.add('hidden');
+          DOM.downloadStats.style.display = 'none';
+          
+          var opts = options || {};
+          updateLoadingState(
+            opts.stage || 'connecting',
+            opts.title || 'Membuka PDF',
+            opts.icon || '📖',
+            opts.text || 'Mempersiapkan...',
+            opts.status || 'Menghubungi server...',
+            opts.progress || 0
+          );
+        } else {
+          DOM.readerLoading.classList.add('hidden');
+        }
+      }
+
+      function updateDownloadProgress(downloadedBytes, totalBytes) {
+        if (!DOM.downloadStats) return;
+        
+        DOM.downloadStats.style.display = 'flex';
+        
+        var downloadedMB = (downloadedBytes / (1024 * 1024)).toFixed(2);
+        var totalMB = totalBytes ? (totalBytes / (1024 * 1024)).toFixed(2) : '?';
+        
+        if (DOM.statSize) DOM.statSize.textContent = downloadedMB + ' / ' + totalMB + ' MB';
+        
+        if (state.downloadStartTime) {
+          var elapsed = (Date.now() - state.downloadStartTime) / 1000;
+          if (elapsed > 0) {
+            var speed = (downloadedBytes / (1024 * elapsed)).toFixed(1);
+            if (DOM.statSpeed) DOM.statSpeed.textContent = speed + ' KB/s';
+          }
+        }
+        
+        if (totalBytes && DOM.progressBar) {
+          var pct = Math.round((downloadedBytes / totalBytes) * 100);
+          DOM.progressBar.style.width = pct + '%';
+        }
       }
 
       function updateNav() {
@@ -403,7 +666,6 @@
       }
 
       function setCachedPDF(fileId, base64, pdfDoc) {
-        // Hapus cache terlama jika melebihi batas
         var keys = Object.keys(state.pdfCache);
         if (keys.length >= PDF_CACHE_MAX) {
           var oldest = keys.reduce(function(a, b) {
@@ -499,25 +761,42 @@
         state.currentPage = 1;
         state.isFlipping = false;
         state.pdfBase64 = null;
+        state.downloadStartTime = 0;
+        state.downloadBytes = 0;
 
         if (DOM.readerBookTitle) DOM.readerBookTitle.textContent = title;
         if (DOM.readerView) DOM.readerView.classList.add('active');
         clearCanvas(DOM.pdfCanvasSingle);
         updateNav();
-        
-        // Reset zoom
         updateZoom(1.0, false);
 
         // CHECK CACHE FIRST
         var cached = getCachedPDF(fileId);
         if (cached) {
           console.log('⚡ Using cached PDF!');
-          showReaderLoading(true, 'Loading from cache...');
+          
+          showReaderLoading(true, {
+            stage: 'cache',
+            title: 'Memuat dari Cache',
+            icon: '💾',
+            text: 'Mengambil PDF dari penyimpanan lokal...',
+            status: 'Cache ditemukan!',
+            progress: 80
+          });
+          
+          await sleep(300);
+          
+          updateLoadingState('rendering', 'Merender Halaman', '🎨', 'Menyiapkan tampilan PDF...', 'Cache loaded', 90);
           
           if (cached.pdfDoc) {
             state.pdfDoc = cached.pdfDoc;
             state.totalPages = cached.pages || state.pdfDoc.numPages || 10;
             state.pdfBase64 = cached.base64;
+            
+            await sleep(200);
+            updateLoadingState('done', 'Selesai!', '✅', 'PDF siap dibaca', 'Loaded from cache', 100);
+            await sleep(300);
+            
             await renderSinglePage(1);
             showReaderLoading(false);
             updateNav();
@@ -526,57 +805,101 @@
           }
         }
 
-        // Download if not cached
-        showReaderLoading(true, 'Downloading PDF...');
+        // DOWNLOAD PDF WITH PROGRESS
+        showReaderLoading(true, {
+          stage: 'connecting',
+          title: 'Menghubungi Server',
+          icon: '🌐',
+          text: 'Membuka koneksi ke Google Drive...',
+          status: 'Connecting...',
+          progress: 5
+        });
+        
+        await sleep(400);
         
         try {
           var fullBase64 = '';
           var chunkIndex = 0;
+          var totalChunks = 1;
+          state.downloadStartTime = Date.now();
+          
+          updateLoadingState('downloading', 'Mengunduh PDF', '📥', 'Mengambil data dari server...', 'Download dimulai', 10);
           
           while (chunkIndex < 200) {
             var chunkUrl = WEBAPP_URL + '?action=getPDFChunk&fileId=' + fileId + '&chunk=' + chunkIndex;
+            
             try {
               var chunkRes = await fetch(chunkUrl);
               var chunkData = await chunkRes.json();
+              
               if (!chunkData.success) break;
+              
               fullBase64 += chunkData.data;
-              var totalChunks = chunkData.totalChunks || 1;
-              showReaderLoading(true, 'Downloading ' + (chunkIndex+1) + '/' + totalChunks);
+              totalChunks = chunkData.totalChunks || 1;
+              state.downloadBytes = fullBase64.length * 0.75;
+              
+              var progress = 10 + Math.round((chunkIndex + 1) / totalChunks * 60);
+              var chunkStatus = 'Mengunduh bagian ' + (chunkIndex + 1) + ' dari ' + totalChunks;
+              
+              updateLoadingState('downloading', 'Mengunduh PDF', '📥', chunkStatus, 'Download berlangsung...', progress);
+              updateDownloadProgress(state.downloadBytes, chunkData.totalSize);
+              
               if (chunkIndex >= totalChunks - 1) break;
               chunkIndex++;
-            } catch (e) { break; }
+              
+            } catch (e) { 
+              console.error('Chunk error:', e);
+              break; 
+            }
           }
 
           if (!fullBase64) throw new Error('Gagal download PDF');
           console.log('✅ Downloaded:', fullBase64.length);
           
           state.pdfBase64 = fullBase64;
-
-          // Render PDF
-          showReaderLoading(true, 'Rendering PDF...');
+          
+          // PROCESSING
+          updateLoadingState('processing', 'Memproses PDF', '⚙️', 'Mengkonversi data...', 'Processing...', 75);
+          await sleep(300);
+          
+          updateLoadingState('decoding', 'Mendekode PDF', '🔓', 'Membaca struktur dokumen...', 'Decoding...', 80);
+          await sleep(200);
+          
+          // RENDER PDF
+          updateLoadingState('rendering', 'Merender PDF', '🎨', 'Menyiapkan halaman pertama...', 'Rendering...', 85);
           
           var binaryStr = atob(fullBase64);
           var bytes = new Uint8Array(binaryStr.length);
           for (var j = 0; j < binaryStr.length; j++) bytes[j] = binaryStr.charCodeAt(j);
 
           if (typeof pdfjsLib === 'undefined') {
+            updateLoadingState('loading-lib', 'Memuat Library', '📚', 'Mengunduh PDF.js...', 'Loading library...', 88);
             await loadPDFJS();
           }
 
           if (typeof pdfjsLib !== 'undefined') {
+            updateLoadingState('parsing', 'Menganalisa PDF', '🔍', 'Membaca jumlah halaman...', 'Parsing document...', 90);
+            
             var loadingTask = pdfjsLib.getDocument({ data: bytes, disableAutoFetch: true, disableStream: true });
             state.pdfDoc = await loadingTask.promise;
             state.totalPages = state.pdfDoc.numPages;
             
-            // CACHE PDF
             setCachedPDF(fileId, fullBase64, state.pdfDoc);
             state.pdfCache[fileId].pages = state.totalPages;
+            
+            updateLoadingState('finalizing', 'Menyelesaikan', '✨', 'Hampir siap...', 'Finalizing...', 95);
+            await sleep(200);
+            
+            updateLoadingState('done', 'Selesai!', '✅', state.totalPages + ' halaman siap dibaca', 'Document ready', 100);
+            await sleep(300);
             
             await renderSinglePage(1);
             showReaderLoading(false);
             updateNav();
             toast('✅ ' + state.totalPages + ' halaman', 'success', 2000);
           } else {
+            updateLoadingState('fallback', 'Mode Preview', '⚠️', 'PDF.js tidak tersedia', 'Fallback mode', 100);
+            await sleep(500);
             renderFallbackPage(1);
             showReaderLoading(false);
             updateNav();
@@ -585,8 +908,11 @@
 
         } catch (e) {
           console.error('Error:', e);
-          showReaderLoading(false);
+          updateLoadingState('error', 'Gagal Memuat', '❌', e.message, 'Terjadi kesalahan', 0);
+          
           if (DOM.retryBtn) DOM.retryBtn.classList.remove('hidden');
+          if (DOM.progressBar) DOM.progressBar.style.width = '0%';
+          
           toast('❌ ' + e.message, 'error', 5000);
           renderFallbackPage(1);
           updateNav();
@@ -635,7 +961,6 @@
         
         updateNav();
         
-        // Auto-fit setelah render
         setTimeout(function() {
           if (state.zoomLevel === 1.0) {
             zoomFitToWidth();
@@ -649,7 +974,6 @@
         try {
           var page = await state.pdfDoc.getPage(num);
           
-          // Hitung ukuran berdasarkan zoom
           var baseScale = 1.5;
           var zoomScale = state.zoomLevel || 1.0;
           var scale = baseScale * zoomScale;
@@ -796,14 +1120,12 @@
         
         var fileId = state.currentBook.fileId;
         
-        // Cek apakah ada base64 di state
         if (state.pdfBase64) {
           triggerDownload(state.pdfBase64, state.currentBook.title);
           toast('💾 Download PDF', 'success', 2000);
           return;
         }
         
-        // Cek cache
         var cached = getCachedPDF(fileId);
         if (cached && cached.base64) {
           triggerDownload(cached.base64, state.currentBook.title);
@@ -811,7 +1133,6 @@
           return;
         }
         
-        // Download ulang
         toast('📥 Mendownload PDF...', 'info', 3000);
         
         fetch(WEBAPP_URL + '?action=getFullPDF&fileId=' + fileId)
@@ -941,7 +1262,6 @@
         }
       });
 
-      // Zoom dengan scroll mouse
       if (DOM.pdfZoomContainer) {
         DOM.pdfZoomContainer.addEventListener('wheel', function(e) {
           if (e.ctrlKey || e.metaKey) {
@@ -955,7 +1275,6 @@
         }, { passive: false });
       }
 
-      // Pinch zoom untuk mobile
       if (DOM.pdfZoomContainer) {
         var initialDistance = 0;
         var initialZoom = 1;
@@ -984,7 +1303,6 @@
         }, { passive: false });
       }
 
-      // Double tap untuk zoom
       if (DOM.pdfZoomContainer) {
         DOM.pdfZoomContainer.addEventListener('dblclick', function(e) {
           if (state.zoomLevel !== 1.0) {
@@ -995,7 +1313,6 @@
         });
       }
 
-      // Klik di area PDF untuk navigasi
       if (DOM.pdfZoomContainer) {
         DOM.pdfZoomContainer.addEventListener('click', function(e) {
           if (!state.currentBook || state.isFlipping) return;
@@ -1006,7 +1323,6 @@
         });
       }
 
-      // Fullscreen change listener
       document.addEventListener('fullscreenchange', updateFullscreenButton);
       document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
       document.addEventListener('mozfullscreenchange', updateFullscreenButton);
@@ -1022,18 +1338,16 @@
       window.addEventListener('online', function() { setSyncStatus('', 'Live'); fetchBooks(true); });
       window.addEventListener('offline', function() { setSyncStatus('offline', 'Offline'); });
 
-      // Service Worker
       if ('serviceWorker' in navigator) {
         var swCode = 'self.addEventListener("install",function(e){e.waitUntil(self.skipWaiting())});self.addEventListener("activate",function(e){e.waitUntil(self.clients.claim())});self.addEventListener("fetch",function(e){e.respondWith(fetch(e.request).then(function(r){var c=r.clone();caches.open("dl-v20").then(function(ca){ca.put(e.request,c)});return r}).catch(function(){return caches.match(e.request)}))});';
         navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'application/javascript'}))).catch(function(){});
       }
 
-      console.log('📖 Digital Library - Single Page + Zoom + Download');
-      console.log('✅ Cache enabled (max ' + PDF_CACHE_MAX + ' PDFs, TTL ' + (PDF_CACHE_TTL/60000) + 'min)');
-      console.log('✅ PDF.js silent loading');
-      console.log('✅ Zoom controls (pinch, scroll, buttons)');
-      console.log('✅ Download PDF support');
-      console.log('✅ Fullscreen mode');
+      console.log('📖 Digital Library - The Jos Edition');
+      console.log('✅ Beautiful loading animation');
+      console.log('✅ Download progress tracking');
+      console.log('✅ Multi-stage loading status');
+      console.log('✅ Cache enabled (max ' + PDF_CACHE_MAX + ' PDFs)');
       
       fetchBooks(false);
       state.syncTimer = setInterval(function() { if (!state.currentBook) fetchBooks(true); }, 10000);
