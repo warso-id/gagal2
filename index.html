@@ -1,1579 +1,2692 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0a0a0a">
-  <title>📖 Digital Library</title>
-  <link rel="icon" href="https://i.imgur.com/JkxRYd6.png">
-  <link rel="apple-touch-icon" href="https://i.imgur.com/JkxRYd6.png">
-  
-  <style>
-    :root {
-      --bg: #0a0a0a; --surface: #141414; --text: #e0d5c5;
-      --text-secondary: #8a7a6a; --accent: #c9a87c; --page-color: #fdf8f2;
-      --success: #27ae60; --warning: #f39c12; --danger: #e74c3c;
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: Georgia, system-ui, sans-serif; background: var(--bg);
-      width: 100vw; height: 100vh; height: 100dvh; overflow: hidden;
-      user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
-      touch-action: pan-y;
-    }
-    .app { width: 100%; height: 100%; display: flex; flex-direction: column; }
-    
-    .app-header {
-      display: flex; align-items: center; gap: 10px; padding: 8px 14px;
-      background: rgba(10,10,10,0.95); backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 100; flex-shrink: 0; min-height: 48px;
-    }
-    .logo { width: 30px; height: 30px; border-radius: 6px; background: url('https://i.imgur.com/JkxRYd6.png') center/contain no-repeat; flex-shrink: 0; }
-    .app-title { color: var(--text); font-size: 0.9rem; font-weight: 600; white-space: nowrap; }
-    
-    .sync-dot {
-      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-      background: var(--success); animation: pulse 2s infinite;
-    }
-    .sync-dot.syncing { background: var(--warning); animation: spin 0.8s linear infinite; }
-    .sync-dot.offline { background: var(--danger); animation: none; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    
-    .sync-text { font-size: 0.6rem; color: var(--text-secondary); white-space: nowrap; }
-    .cache-indicator { font-size: 0.55rem; color: var(--success); margin-left: 4px; }
-    
-    .refresh-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: var(--text); padding: 6px 10px; border-radius: 12px; cursor: pointer; font-size: 0.72rem; margin-left: auto; }
-    .refresh-btn:hover { background: rgba(255,255,255,0.12); }
-    
-    .main-content { flex: 1; position: relative; overflow: hidden; }
-    
-    .library-view { position: absolute; inset: 0; display: flex; flex-direction: column; }
-    .book-scroll { flex: 1; overflow-y: auto; padding: 12px 16px; }
-    .book-scroll::-webkit-scrollbar { width: 3px; }
-    .book-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
-    
-    .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
-    
-    .book-card {
-      background: var(--surface); border-radius: 10px; padding: 16px 12px;
-      cursor: pointer; transition: all 0.25s; text-align: center; border: 1px solid transparent; position: relative;
-    }
-    .book-card:hover { border-color: rgba(201,168,124,0.4); transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
-    .book-card:active { transform: scale(0.97); }
-    .book-card.cached::after {
-      content: '💾'; position: absolute; top: 6px; left: 6px; font-size: 0.5rem;
-    }
-    .book-card .emoji { font-size: 2rem; margin-bottom: 8px; }
-    .book-card .title { color: var(--text); font-size: 0.75rem; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .book-card .link { color: var(--text-secondary); font-size: 0.5rem; margin-top: 4px; word-break: break-all; font-family: monospace; }
-    .book-card .badge { display: inline-block; margin-top: 6px; font-size: 0.5rem; background: rgba(201,168,124,0.2); color: var(--accent); padding: 2px 8px; border-radius: 8px; }
-    
-    .reader-view { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; transform: translateX(105%); transition: transform 0.4s; z-index: 50; }
-    .reader-view.active { transform: translateX(0); }
-    
-    .reader-topbar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: rgba(0,0,0,0.9); z-index: 60; flex-shrink: 0; }
-    .btn-back { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: var(--text); padding: 5px 12px; border-radius: 14px; cursor: pointer; font-size: 0.72rem; font-family: inherit; }
-    .btn-back:hover { background: rgba(255,255,255,0.14); }
-    .reader-title { flex: 1; color: var(--text); font-size: 0.74rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    
-    /* ============ PDF VIEW - THE JOS ============ */
-    .book-area { 
-      flex: 1; 
-      position: relative; 
-      display: flex; 
-      flex-direction: column; 
-      overflow: hidden; 
-      background: #1a1a1a;
-    }
-    
-    /* Container Utama PDF */
-    .pdf-viewer-wrapper {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-      cursor: grab;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .pdf-viewer-wrapper:active {
-      cursor: grabbing;
-    }
-    
-    .pdf-viewer-wrapper.grabbing {
-      cursor: grabbing;
-    }
-    
-    /* Canvas Container - Bisa digeser */
-    .pdf-canvas-container {
-      position: absolute;
-      transform-origin: center center;
-      transition: transform 0.15s ease-out;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-    }
-    
-    .pdf-canvas-container.no-transition {
-      transition: none !important;
-    }
-    
-    /* Canvas PDF */
-    #pdfCanvasSingle {
-      display: block;
-      box-shadow: 
-        0 20px 60px rgba(0,0,0,0.8),
-        0 0 0 1px rgba(255,255,255,0.05),
-        0 0 120px rgba(201,168,124,0.05);
-      background: #fff;
-      border-radius: 2px;
-      pointer-events: none; /* Biar mouse event ke container */
-    }
-    
-    /* Shadow effect untuk buku */
-    .pdf-page-shadow {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      pointer-events: none;
-      box-shadow: 
-        inset 0 0 30px rgba(0,0,0,0.1),
-        0 0 0 2px rgba(0,0,0,0.05);
-      border-radius: 2px;
-    }
-    
-    /* Background pattern */
-    .pdf-viewer-wrapper::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: 
-        radial-gradient(circle at center, rgba(201,168,124,0.03) 0%, transparent 70%),
-        linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
-        linear-gradient(-45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.02) 75%),
-        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.02) 75%);
-      background-size: 100% 100%, 3px 3px, 3px 3px, 3px 3px, 3px 3px;
-      background-position: 0 0, 0 0, 1.5px 1.5px, 1.5px 1.5px, 0 0;
-      pointer-events: none;
-    }
-    
-    /* ZOOM CONTROLS */
-    .zoom-controls {
-      position: absolute;
-      bottom: 16px;
-      right: 16px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0,0,0,0.9);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      padding: 8px 12px;
-      border-radius: 24px;
-      z-index: 70;
-      border: 1px solid rgba(255,255,255,0.12);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-    }
-    
-    .zoom-btn {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.04);
-      color: var(--text);
-      font-size: 0.85rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-      padding: 0;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .zoom-btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at center, rgba(201,168,124,0.3), transparent);
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    
-    .zoom-btn:hover {
-      background: rgba(255,255,255,0.12);
-      border-color: var(--accent);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(201,168,124,0.3);
-    }
-    
-    .zoom-btn:hover::before {
-      opacity: 1;
-    }
-    
-    .zoom-btn:active {
-      transform: scale(0.92);
-    }
-    
-    .zoom-level {
-      color: var(--text);
-      font-size: 0.7rem;
-      min-width: 44px;
-      text-align: center;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-    
-    .download-btn {
-      background: rgba(39, 174, 96, 0.15);
-      border-color: rgba(39, 174, 96, 0.3);
-    }
-    
-    .download-btn:hover {
-      background: rgba(39, 174, 96, 0.25);
-      border-color: var(--success);
-      box-shadow: 0 4px 12px rgba(39,174,96,0.3);
-    }
-    
-    /* Page indicator floating */
-    .page-floating-indicator {
-      position: absolute;
-      top: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.8);
-      backdrop-filter: blur(10px);
-      padding: 6px 16px;
-      border-radius: 16px;
-      font-size: 0.7rem;
-      color: var(--text);
-      z-index: 65;
-      border: 1px solid rgba(255,255,255,0.08);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s;
-      font-family: Georgia, serif;
-    }
-    
-    .page-floating-indicator.visible {
-      opacity: 1;
-    }
-    
-    /* FULLSCREEN */
-    .book-area:fullscreen,
-    .book-area:-webkit-full-screen,
-    .book-area:-moz-full-screen,
-    .book-area:-ms-fullscreen {
-      background: #000;
-    }
-    
-    .book-area:fullscreen .zoom-controls,
-    .book-area:-webkit-full-screen .zoom-controls {
-      bottom: 24px;
-      right: 24px;
-    }
-    
-    /* ============ LOADING OVERLAY ============ */
-    .load-overlay { 
-      position: absolute; 
-      inset: 0; 
-      background: rgba(10,10,10,0.98); 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      z-index: 80;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-    .load-overlay.hidden { display: none; }
-    
-    .spinner-container {
-      position: relative;
-      width: 80px;
-      height: 80px;
-      margin-bottom: 20px;
-    }
-    
-    .spinner-ring {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      border: 3px solid transparent;
-      animation: spinAnim 1.2s linear infinite;
-    }
-    
-    .spinner-ring:nth-child(1) {
-      border-top-color: var(--accent);
-      animation-duration: 1s;
-    }
-    
-    .spinner-ring:nth-child(2) {
-      width: 70%;
-      height: 70%;
-      top: 15%;
-      left: 15%;
-      border-right-color: var(--success);
-      animation-duration: 1.5s;
-      animation-direction: reverse;
-    }
-    
-    .spinner-ring:nth-child(3) {
-      width: 40%;
-      height: 40%;
-      top: 30%;
-      left: 30%;
-      border-bottom-color: var(--warning);
-      animation-duration: 2s;
-    }
-    
-    .spinner-icon {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 1.5rem;
-      animation: bounceIcon 1s ease-in-out infinite;
-    }
-    
-    @keyframes spinAnim { 
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    @keyframes bounceIcon {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); }
-      50% { transform: translate(-50%, -50%) scale(1.2); }
-    }
-    
-    .progress-container {
-      width: 200px;
-      height: 4px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 2px;
-      overflow: hidden;
-      margin: 16px 0;
-    }
-    
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--success));
-      border-radius: 2px;
-      transition: width 0.3s ease;
-      width: 0%;
-      animation: progressPulse 2s ease-in-out infinite;
-    }
-    
-    @keyframes progressPulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
-    
-    .load-title {
-      color: var(--text);
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 6px;
-      text-align: center;
-    }
-    
-    .load-text { 
-      color: var(--text-secondary); 
-      font-size: 0.72rem;
-      text-align: center;
-      max-width: 250px;
-      line-height: 1.4;
-    }
-    
-    .load-status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 8px;
-      padding: 4px 12px;
-      background: rgba(255,255,255,0.04);
-      border-radius: 12px;
-      font-size: 0.65rem;
-      color: var(--accent);
-    }
-    
-    .load-status .dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: pulse 1s infinite;
-    }
-    
-    .download-stats {
-      display: flex;
-      gap: 16px;
-      margin-top: 12px;
-      font-size: 0.6rem;
-      color: var(--text-secondary);
-    }
-    
-    .download-stat {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    
-    .download-stat .icon {
-      font-size: 0.7rem;
-    }
-    
-    .retry-btn { 
-      background: var(--accent); 
-      color: #1a1a1a; 
-      border: none; 
-      padding: 8px 20px; 
-      border-radius: 20px; 
-      cursor: pointer; 
-      font-weight: 600; 
-      font-size: 0.72rem; 
-      margin-top: 16px; 
-      font-family: inherit;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .retry-btn:hover {
-      background: #d4b88c;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(201,168,124,0.3);
-    }
-    .retry-btn.hidden { display: none; }
-    
-    .reader-bottombar { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 16px; background: rgba(0,0,0,0.9); flex-shrink: 0; z-index: 60; }
-    .nav-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: var(--text); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: var(--accent); }
-    .nav-btn:disabled { opacity: 0.15; cursor: not-allowed; }
-    .page-indicator { color: var(--text); font-size: 0.78rem; font-weight: 600; min-width: 80px; text-align: center; background: rgba(255,255,255,0.04); padding: 5px 12px; border-radius: 12px; }
-    
-    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 20px; font-size: 0.74rem; z-index: 200; display: none; animation: slideDown 0.3s; font-weight: 600; }
-    .toast.show { display: block; }
-    .toast.error { background: var(--danger); color: #fff; }
-    .toast.success { background: var(--success); color: #fff; }
-    @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-    
-    @media (max-width: 768px) {
-      .book-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
-      .book-card { padding: 12px 8px; }
-      .book-card .emoji { font-size: 1.5rem; }
-      .book-card .title { font-size: 0.68rem; }
-      .reader-topbar { padding: 4px 8px; }
-      .reader-bottombar { padding: 6px 10px; gap: 10px; }
-      .nav-btn { width: 34px; height: 34px; font-size: 0.9rem; }
-      .zoom-controls { bottom: 10px; right: 10px; padding: 6px 10px; gap: 4px; }
-      .zoom-btn { width: 30px; height: 30px; font-size: 0.75rem; }
-      .pdf-canvas-container { padding: 20px; }
-      .spinner-container { width: 60px; height: 60px; }
-      .progress-container { width: 160px; }
-    }
-    @media (max-width: 480px) {
-      .book-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-      .book-card { padding: 10px 6px; }
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="SIM Upload - Portal layanan akademik terintegrasi. Akses cepat ke berbagai layanan digital." />
+    <meta name="theme-color" content="#0a0a12" />
+    <meta property="og:title" content="SIM Upload | Akademik Hub" />
+    <meta property="og:description" content="Portal layanan akademik terintegrasi dengan pencarian cepat dan statistik penggunaan." />
+    <meta property="og:type" content="website" />
+    <title>SIM Upload | Full Features</title>
+
+    <!-- Google Fonts dengan display=swap untuk mencegah FOIT -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+
+    <!-- Font Awesome dengan SRI -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" 
+          integrity="sha512-..." 
+          crossorigin="anonymous" />
+
+    <!-- Manifest untuk PWA -->
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU0lNIFVwbG9hbmQiLCJzaG9yZSI6IlNJTSVYifQmFja2dyb3VuZF9jb2xvciI6IiMwYTBhMTIifQ==" />
+
+    <style>
+        /* ───────────── RESET & CSS VARIABLES (THEME) ───────────── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a12;
+            --bg-secondary: rgba(255, 255, 255, 0.02);
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --bg-card-hover: rgba(255, 255, 255, 0.06);
+            --border-color: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(255, 215, 0, 0.15);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.5);
+            --text-muted: rgba(255, 255, 255, 0.2);
+            --shadow: 0 40px 80px rgba(0, 0, 0, 0.7);
+            --blob-opacity: 0.5;
+            --blob-1: #6a11cb;
+            --blob-2: #f7971e;
+            --blob-3: #00c6ff;
+            --icon-bg: rgba(247, 151, 30, 0.2);
+            --tag-bg: rgba(255, 215, 0, 0.08);
+            --tag-color: #ffd700;
+            --accent: #ffd700;
+            --accent-glow: rgba(255, 215, 0, 0.4);
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --input-border: rgba(255, 255, 255, 0.08);
+            --toolbar-bg: rgba(255, 255, 255, 0.02);
+            --stat-bg: rgba(255, 255, 255, 0.02);
+            --sync-badge: rgba(0, 255, 136, 0.1);
+            --sync-color: #00ff88;
+            --skeleton-shine: rgba(255, 255, 255, 0.05);
+            --toast-success: #00ff88;
+            --toast-error: #ff4444;
+            --toast-info: #00c6ff;
+            --focus-ring: rgba(255, 215, 0, 0.6);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f2f4f9;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f8f9fc;
+            --border-color: #e2e6ef;
+            --border-hover: #f7971e;
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a5a;
+            --text-muted: #8a8a9e;
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+            --blob-opacity: 0.04;
+            --blob-1: #6a11cb;
+            --blob-2: #f7971e;
+            --blob-3: #00c6ff;
+            --icon-bg: rgba(247, 151, 30, 0.12);
+            --tag-bg: rgba(247, 151, 30, 0.12);
+            --tag-color: #b87a0e;
+            --accent: #f7971e;
+            --accent-glow: rgba(247, 151, 30, 0.25);
+            --input-bg: #f2f4f9;
+            --input-border: #dce0e8;
+            --toolbar-bg: #ffffff;
+            --stat-bg: #ffffff;
+            --sync-badge: rgba(0, 200, 100, 0.1);
+            --sync-color: #00b86b;
+            --skeleton-shine: rgba(0, 0, 0, 0.05);
+            --toast-success: #00b86b;
+            --toast-error: #d32f2f;
+            --toast-info: #0288d1;
+            --focus-ring: rgba(247, 151, 30, 0.6);
+        }
+
+        /* Ultra Dark Mode */
+        [data-theme="ultra-dark"] {
+            --bg-primary: #050508;
+            --bg-secondary: rgba(255, 255, 255, 0.01);
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --bg-card-hover: rgba(255, 255, 255, 0.04);
+            --text-primary: #e0e0e0;
+            --text-secondary: rgba(255, 255, 255, 0.3);
+            --text-muted: rgba(255, 255, 255, 0.1);
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.9);
+            --blob-opacity: 0.3;
+        }
+
+        /* Respect reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            .blob { display: none; }
+            #particle-canvas { display: none; }
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-primary);
+            padding: 1.5rem 1rem;
+            transition: background 0.4s ease, color 0.4s ease;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ───────────── SKIP LINK ───────────── */
+        .skip-link {
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: #000;
+            padding: 0.8rem 2rem;
+            border-radius: 0 0 8px 8px;
+            z-index: 1000;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: top 0.3s ease;
+        }
+        .skip-link:focus {
+            top: 0;
+            outline: 3px solid var(--focus-ring);
+            outline-offset: 2px;
+        }
+
+        /* ───────────── LATAR BELAKANG ───────────── */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: var(--blob-opacity);
+            z-index: 0;
+            pointer-events: none;
+            animation: blobFloat 25s infinite alternate ease-in-out;
+            transition: opacity 0.8s ease;
+        }
+        .blob-1 {
+            width: 50vw;
+            height: 50vw;
+            top: -10%;
+            left: -10%;
+            background: radial-gradient(circle, var(--blob-1), #2575fc);
+            animation-duration: 30s;
+        }
+        .blob-2 {
+            width: 40vw;
+            height: 40vw;
+            bottom: -15%;
+            right: -10%;
+            background: radial-gradient(circle, var(--blob-2), #ffd200);
+            opacity: calc(var(--blob-opacity) * 0.6);
+            animation-duration: 35s;
+            animation-delay: -5s;
+        }
+        .blob-3 {
+            width: 30vw;
+            height: 30vw;
+            top: 40%;
+            right: 20%;
+            background: radial-gradient(circle, var(--blob-3), #0072ff);
+            opacity: calc(var(--blob-opacity) * 0.4);
+            animation-duration: 28s;
+            animation-delay: -10s;
+        }
+
+        @keyframes blobFloat {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            33% { transform: translate(8%, -6%) scale(1.1) rotate(5deg); }
+            66% { transform: translate(-5%, 10%) scale(0.9) rotate(-3deg); }
+            100% { transform: translate(4%, -4%) scale(1.05) rotate(2deg); }
+        }
+
+        /* ───────────── KONTEN UTAMA ───────────── */
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 1320px;
+        }
+
+        /* ───────────── HEADER ───────────── */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            gap: 1rem;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+        .header-left h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #f7971e 0%, #ffd700 50%, #f7971e 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmerText 4s linear infinite;
+        }
+        @keyframes shimmerText {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+        .header-left .sub {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 400;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .header-actions .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: var(--tag-bg);
+            border: 1px solid var(--border-hover);
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            color: var(--tag-color);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(4px);
+            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            aria-live: polite;
+            aria-atomic: true;
+        }
+        .header-actions .live-badge .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            box-shadow: 0 0 12px #00ff88;
+            animation: pulseDot 1.5s ease-in-out infinite;
+        }
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.6); }
+        }
+
+        .sync-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--sync-badge);
+            border: 1px solid var(--sync-color);
+            color: var(--sync-color);
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            white-space: nowrap;
+        }
+        .sync-badge.show {
+            opacity: 1;
+        }
+        .sync-badge i {
+            font-size: 0.5rem;
+        }
+
+        .theme-toggle {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-secondary);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .theme-toggle:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: rotate(20deg);
+        }
+
+        .admin-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-secondary);
+            padding: 0.3rem 1rem 0.3rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            white-space: nowrap;
+            rel: noopener noreferrer;
+        }
+        .admin-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--tag-bg);
+            transform: scale(1.05);
+        }
+        .admin-btn i {
+            font-size: 0.9rem;
+        }
+
+        /* ───────────── TOOLBAR ───────────── */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.8rem 1rem;
+            background: var(--toolbar-bg);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-color);
+            border-radius: 60px;
+            padding: 0.6rem 1.2rem 0.6rem 1.8rem;
+            margin-bottom: 2rem;
+            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+        .toolbar .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            flex: 1;
+            role: tablist;
+            aria-label: "Filter kategori";
+        }
+        .toolbar .tabs button {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.3rem 0.9rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+            border: 1px solid transparent;
+            role: tab;
+            aria-selected: false;
+        }
+        .toolbar .tabs button:hover {
+            color: var(--text-primary);
+            background: var(--bg-card);
+        }
+        .toolbar .tabs button.active {
+            color: var(--accent);
+            background: var(--tag-bg);
+            border-color: var(--border-hover);
+            aria-selected: true;
+        }
+        .toolbar .tabs button .count {
+            background: var(--text-muted);
+            color: var(--bg-primary);
+            font-size: 0.6rem;
+            padding: 0 0.4rem;
+            border-radius: 50px;
+            margin-left: 0.3rem;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        .toolbar .tabs button.active .count {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .toolbar .search-wrap {
+            display: flex;
+            align-items: center;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 50px;
+            padding: 0.1rem 0.1rem 0.1rem 1rem;
+            transition: border-color 0.3s ease;
+            min-width: 160px;
+            position: relative;
+        }
+        .toolbar .search-wrap:focus-within {
+            border-color: var(--accent);
+        }
+        .toolbar .search-wrap i {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .toolbar .search-wrap input {
+            background: transparent;
+            border: none;
+            padding: 0.5rem 2.2rem 0.5rem 0.6rem;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            width: 100%;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+        }
+        .toolbar .search-wrap input::placeholder {
+            color: var(--text-muted);
+        }
+        .toolbar .search-wrap .clear-search {
+            position: absolute;
+            right: 0.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: none;
+            padding: 0.3rem;
+            font-size: 0.8rem;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            align-items: center;
+            justify-content: center;
+        }
+        .toolbar .search-wrap .clear-search.visible {
+            display: flex;
+        }
+        .toolbar .search-wrap .clear-search:hover {
+            color: var(--text-primary);
+            background: var(--bg-card);
+        }
+
+        .toolbar .action-btns {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+        }
+        .toolbar .action-btns button {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-secondary);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            position: relative;
+        }
+        .toolbar .action-btns button:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .toolbar .action-btns button.active-mode {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--tag-bg);
+        }
+        .toolbar .action-btns .reset-btn {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .toolbar .action-btns .reset-btn:hover {
+            color: #ff6b6b;
+            border-color: #ff6b6b;
+        }
+
+        /* ───────────── SKELETON LOADER ───────────── */
+        .skeleton-card {
+            flex: 0 0 calc(100% / 3 - 1.35rem);
+            min-width: 260px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 1.8rem 1.4rem 1.6rem;
+            border: 1px solid var(--border-color);
+            animation: skeletonPulse 1.5s ease-in-out infinite;
+        }
+        .skeleton-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: var(--skeleton-shine);
+            margin-bottom: 1rem;
+        }
+        .skeleton-tag {
+            width: 60px;
+            height: 20px;
+            border-radius: 50px;
+            background: var(--skeleton-shine);
+            margin-bottom: 0.8rem;
+        }
+        .skeleton-title {
+            width: 80%;
+            height: 20px;
+            border-radius: 8px;
+            background: var(--skeleton-shine);
+            margin-bottom: 0.5rem;
+        }
+        .skeleton-desc {
+            width: 100%;
+            height: 14px;
+            border-radius: 8px;
+            background: var(--skeleton-shine);
+            margin-bottom: 1.5rem;
+        }
+        .skeleton-btn {
+            width: 100%;
+            height: 38px;
+            border-radius: 50px;
+            background: var(--skeleton-shine);
+        }
+        @keyframes skeletonPulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* ───────────── CAROUSEL WRAPPER ───────────── */
+        .carousel-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+            background: var(--bg-secondary);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            padding: 1.8rem 0.8rem 1.2rem;
+            transition: box-shadow 0.4s ease, background 0.4s ease, border-color 0.3s ease;
+        }
+        .carousel-wrapper:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .progress-timer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #f7971e, #ffd700);
+            width: 100%;
+            z-index: 5;
+            border-radius: 28px 28px 0 0;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+            transition: width 0.1s linear;
+        }
+        .progress-timer.hidden {
+            display: none;
+        }
+
+        .carousel-track-container {
+            overflow: hidden;
+            padding: 0.3rem 0.2rem;
+            role: region;
+            aria-roledescription: "carousel";
+            aria-label: "Layanan tersedia";
+        }
+        .carousel-track {
+            display: flex;
+            gap: 2rem;
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            will-change: transform;
+            align-items: stretch;
+        }
+
+        .carousel-wrapper.grid-mode .carousel-track {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.8rem;
+            transform: none !important;
+            transition: none !important;
+        }
+        .carousel-wrapper.grid-mode .carousel-track-container {
+            overflow: visible;
+        }
+        .carousel-wrapper.grid-mode .progress-timer {
+            display: none;
+        }
+        .carousel-wrapper.grid-mode .card {
+            flex: 0 0 calc(33.33% - 1.8rem);
+            min-width: 260px;
+            max-width: 380px;
+        }
+
+        /* ───── ERROR STATE ───── */
+        .error-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+        }
+        .error-state i {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 1rem;
+            color: var(--toast-error);
+        }
+        .error-state h3 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        .error-state button {
+            margin-top: 1.5rem;
+            padding: 0.6rem 2rem;
+            border-radius: 50px;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        .error-state button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px var(--accent-glow);
+        }
+
+        /* ───── CARD ───── */
+        .card {
+            flex: 0 0 calc(100% / 3 - 1.35rem);
+            min-width: 260px;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 1.8rem 1.4rem 1.6rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+            transition: transform 0.3s ease, box-shadow 0.4s ease, border-color 0.3s ease, background 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            role: group;
+            aria-roledescription: "slide";
+        }
+        @media (hover: hover) {
+            .card:hover {
+                transform: translateY(-6px) scale(1.01);
+                box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+                border-color: var(--border-hover);
+                background: var(--bg-card-hover);
+            }
+            .card .glow-overlay {
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle at center, rgba(255, 215, 0, 0.03), transparent 70%);
+                opacity: 0;
+                transition: opacity 0.5s ease;
+                pointer-events: none;
+                border-radius: 50%;
+            }
+            .card:hover .glow-overlay {
+                opacity: 1;
+            }
+        }
+        @media (hover: none) {
+            .card:active {
+                transform: scale(0.98);
+                transition: transform 0.1s ease;
+            }
+        }
+
+        .card .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.6rem;
+        }
+        .card .icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            background: var(--icon-bg);
+            border: 1px solid var(--border-hover);
+            transition: transform 0.3s ease;
+        }
+        .card .icon i {
+            filter: drop-shadow(0 4px 12px rgba(255, 215, 0, 0.2));
+        }
+        .card .card-actions-top {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+        }
+        .card .card-actions-top button {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            padding: 0.2rem;
+            line-height: 1;
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card .card-actions-top .fav-btn {
+            color: var(--text-muted);
+        }
+        .card .card-actions-top .fav-btn.active {
+            color: #ff6b6b;
+            text-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
+            animation: heartPop 0.3s ease;
+        }
+        @keyframes heartPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        .card .hit-badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--input-bg);
+            padding: 0.15rem 0.7rem;
+            border-radius: 50px;
+            border: 1px solid var(--border-color);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .card .hit-badge i {
+            font-size: 0.6rem;
+            color: var(--accent);
+        }
+        .card .hit-badge .hit-count {
+            color: var(--text-primary);
+            font-weight: 700;
+            min-width: 1.2rem;
+            text-align: center;
+        }
+
+        .card .tag {
+            display: inline-block;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--tag-color);
+            background: var(--tag-bg);
+            padding: 0.2rem 0.8rem;
+            border-radius: 50px;
+            border: 1px solid var(--border-hover);
+            margin: 0.4rem 0 0.6rem;
+            align-self: flex-start;
+        }
+        .card h3 {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 0.3rem;
+        }
+        .card .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-weight: 400;
+            margin-bottom: 1.2rem;
+            flex-grow: 1;
+            line-height: 1.5;
+        }
+        .card .link-wrapper {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .card .link-wrapper a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            min-height: 44px;
+        }
+        .card .link-wrapper a i {
+            font-size: 0.7rem;
+            transition: transform 0.3s ease;
+        }
+        .card .link-wrapper a:hover {
+            background: var(--tag-bg);
+            border-color: var(--border-hover);
+            transform: scale(1.02);
+        }
+        .card .link-wrapper a:hover i {
+            transform: translateX(4px);
+        }
+        .card .link-wrapper .copy-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+        }
+        .card .link-wrapper .copy-btn:hover {
+            background: var(--tag-bg);
+            color: var(--accent);
+            border-color: var(--border-hover);
+            transform: scale(1.1);
+        }
+        .card .link-wrapper .copy-btn.copied {
+            color: var(--toast-success);
+            border-color: var(--toast-success);
+            background: rgba(0, 255, 136, 0.1);
+        }
+        .card .link-wrapper .share-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+        }
+        .card .link-wrapper .share-btn:hover {
+            background: var(--tag-bg);
+            color: var(--accent);
+            border-color: var(--border-hover);
+            transform: scale(1.1);
+        }
+
+        /* ───── CAROUSEL CONTROLS ───── */
+        .carousel-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.2rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        .carousel-controls button {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .carousel-controls button:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: scale(1.05);
+        }
+        .carousel-controls button:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+        .carousel-controls .dots {
+            display: flex;
+            gap: 0.6rem;
+        }
+        .carousel-controls .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            border: none;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            padding: 0;
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .carousel-controls .dot::after {
+            content: '';
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .carousel-controls .dot.active::after {
+            background: var(--accent);
+            box-shadow: 0 0 16px var(--accent-glow);
+            width: 28px;
+            border-radius: 10px;
+        }
+        .carousel-controls .dot:hover:not(.active)::after {
+            background: var(--text-secondary);
+            transform: scale(1.2);
+        }
+        .carousel-counter {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            min-width: 40px;
+            text-align: center;
+        }
+        .carousel-controls.hidden {
+            display: none;
+        }
+        .carousel-pause-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+        .carousel-pause-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .carousel-pause-btn.paused {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--tag-bg);
+        }
+
+        /* ───── STATISTIK / LEADERBOARD ───── */
+        .stats-section {
+            margin-top: 2.5rem;
+            background: var(--stat-bg);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.2rem 1.8rem 1.5rem;
+            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+        .stats-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .stats-header h3 {
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .stats-header h3 i {
+            color: var(--accent);
+        }
+        .stats-header .total-clicks {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        .stats-header .total-clicks strong {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .stats-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem 1.5rem;
+        }
+        .stats-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-card);
+            padding: 0.3rem 1rem 0.3rem 0.8rem;
+            border-radius: 50px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .stats-item:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+        }
+        .stats-item .rank {
+            font-weight: 700;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            min-width: 1.2rem;
+            text-align: right;
+        }
+        .stats-item .rank.gold { color: #ffd700; }
+        .stats-item .rank.silver { color: #c0c0c0; }
+        .stats-item .rank.bronze { color: #cd7f32; }
+        .stats-item .s-title {
+            color: var(--text-primary);
+            font-weight: 600;
+            max-width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .stats-item .s-tag {
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            color: var(--tag-color);
+            background: var(--tag-bg);
+            padding: 0.05rem 0.5rem;
+            border-radius: 50px;
+            border: 1px solid var(--border-hover);
+            flex-shrink: 0;
+        }
+        .stats-item .s-clicks {
+            font-weight: 700;
+            color: var(--text-primary);
+            background: var(--input-bg);
+            padding: 0.05rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            border: 1px solid var(--border-color);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+            flex-shrink: 0;
+        }
+        .stats-item .s-clicks i {
+            font-size: 0.55rem;
+            color: var(--accent);
+        }
+        .stats-empty {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            padding: 0.5rem 0;
+        }
+
+        /* ───── TOAST ───── */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            color: var(--text-primary);
+            padding: 0.7rem 2rem;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 2px solid var(--border-color);
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            role: alert;
+            aria-live: assertive;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast.success { border-color: var(--toast-success); }
+        .toast.error { border-color: var(--toast-error); animation: toastShake 0.5s ease; }
+        .toast.info { border-color: var(--toast-info); }
+        .toast i.success-i { color: var(--toast-success); }
+        .toast i.error-i { color: var(--toast-error); }
+        .toast i.info-i { color: var(--toast-info); }
+        @keyframes toastShake {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            25% { transform: translateX(calc(-50% - 8px)) translateY(0); }
+            75% { transform: translateX(calc(-50% + 8px)) translateY(0); }
+        }
+
+        /* ───── CONFIRMATION DIALOG ───── */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .dialog-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .dialog-box {
+            background: var(--bg-card);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .dialog-overlay.active .dialog-box {
+            transform: scale(1);
+        }
+        .dialog-box h3 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        .dialog-box p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .dialog-actions {
+            display: flex;
+            gap: 0.8rem;
+            justify-content: center;
+        }
+        .dialog-actions button {
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            min-height: 44px;
+        }
+        .dialog-actions .btn-cancel {
+            background: var(--input-bg);
+            color: var(--text-secondary);
+        }
+        .dialog-actions .btn-confirm {
+            background: var(--toast-error);
+            color: #fff;
+            border-color: var(--toast-error);
+        }
+        .dialog-actions .btn-confirm:hover {
+            transform: scale(1.05);
+        }
+
+        /* ───── OFFLINE BANNER ───── */
+        .offline-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #ff6b6b;
+            color: #fff;
+            text-align: center;
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 1001;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+        }
+        .offline-banner.show {
+            transform: translateY(0);
+        }
+
+        /* ───── RESPONSIVE ───── */
+        @media (max-width: 1100px) {
+            .card { flex: 0 0 calc(100% / 2 - 1rem); }
+            .carousel-wrapper.grid-mode .card { flex: 0 0 calc(50% - 1.8rem); }
+            .skeleton-card { flex: 0 0 calc(100% / 2 - 1rem); }
+        }
+        @media (max-width: 768px) {
+            .header-left h1 { font-size: 1.8rem; }
+            .header-left .sub { font-size: 0.8rem; }
+            .toolbar {
+                border-radius: 20px;
+                padding: 0.8rem 1rem;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .toolbar .tabs { justify-content: center; }
+            .toolbar .search-wrap { min-width: unset; width: 100%; }
+            .toolbar .action-btns { justify-content: center; }
+            .card {
+                flex: 0 0 calc(100% - 0.5rem);
+                min-width: unset;
+            }
+            .skeleton-card { flex: 0 0 calc(100% - 0.5rem); }
+            .carousel-wrapper { padding: 1.2rem 0.3rem 1rem; border-radius: 20px; }
+            .carousel-track { gap: 1.2rem; }
+            .carousel-wrapper.grid-mode .card {
+                flex: 0 0 calc(100% - 0.5rem);
+                max-width: 100%;
+            }
+            .header-actions .live-badge { font-size: 0.6rem; padding: 0.3rem 0.8rem; }
+            .admin-btn { font-size: 0.7rem; padding: 0.2rem 0.7rem 0.2rem 0.6rem; }
+            .admin-btn i { font-size: 0.8rem; }
+            .sync-badge { font-size: 0.5rem; padding: 0.2rem 0.6rem; }
+            .stats-section { padding: 1rem 1rem 1.2rem; }
+            .stats-item { font-size: 0.7rem; padding: 0.2rem 0.6rem 0.2rem 0.5rem; }
+            .stats-item .s-title { max-width: 120px; }
+        }
+        @media (max-width: 480px) {
+            .header-left h1 { font-size: 1.5rem; }
+            .toolbar .tabs button { font-size: 0.65rem; padding: 0.2rem 0.6rem; }
+            .card { padding: 1.2rem 1rem; }
+            .card .icon { width: 40px; height: 40px; font-size: 1.2rem; }
+            .card h3 { font-size: 1rem; }
+            .stats-item .s-title { max-width: 80px; }
+            .admin-btn { font-size: 0.65rem; padding: 0.2rem 0.6rem; }
+            .sync-badge { font-size: 0.45rem; padding: 0.15rem 0.5rem; }
+        }
+
+        /* Orientation */
+        @media (orientation: landscape) and (max-height: 600px) {
+            .card { flex: 0 0 calc(50% - 1rem); }
+            .carousel-wrapper { padding: 1rem 0.5rem; }
+        }
+
+        .hidden { display: none !important; }
+
+        /* Focus visible untuk aksesibilitas */
+        button:focus-visible,
+        input:focus-visible,
+        a:focus-visible {
+            outline: 3px solid var(--focus-ring);
+            outline-offset: 2px;
+        }
+
+        /* Screen reader only */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
 </head>
+
 <body>
-  <div class="app">
-    <div class="app-header">
-      <div class="logo"></div>
-      <span class="app-title">📖 Digital Library</span>
-      <span class="sync-dot" id="syncDot" title="Sync status"></span>
-      <span class="sync-text" id="syncText">Live</span>
-      <button class="refresh-btn" id="refreshBtn">🔄 Sync</button>
+
+    <!-- ─── SKIP LINK ─── -->
+    <a href="#mainContent" class="skip-link">Lewati ke konten utama</a>
+
+    <!-- ─── OFFLINE BANNER ─── -->
+    <div class="offline-banner" id="offlineBanner" role="alert">
+        <i class="fas fa-wifi-slash"></i> Anda sedang offline. Menampilkan data cache.
     </div>
 
-    <div class="main-content">
-      <div class="library-view" id="libraryView">
-        <div class="book-scroll" id="bookScroll">
-          <div class="load-overlay" id="libLoading">
-            <div class="spinner-container">
-              <div class="spinner-ring"></div>
-              <div class="spinner-ring"></div>
-              <div class="spinner-ring"></div>
-              <div class="spinner-icon">📚</div>
-            </div>
-            <div class="load-title">Memuat Perpustakaan</div>
-            <div class="load-text">Mengambil data dari Google Spreadsheet...</div>
-          </div>
-        </div>
-      </div>
+    <!-- ─── BLOBS ─── -->
+    <div class="blob blob-1" aria-hidden="true"></div>
+    <div class="blob blob-2" aria-hidden="true"></div>
+    <div class="blob blob-3" aria-hidden="true"></div>
 
-      <div class="reader-view" id="readerView">
-        <div class="reader-topbar">
-          <button class="btn-back" id="btnBack">← Kembali</button>
-          <div class="reader-title" id="readerBookTitle">Pilih buku</div>
-        </div>
-        
-        <div class="book-area">
-          <!-- PDF Viewer dengan Drag Support -->
-          <div class="pdf-viewer-wrapper" id="pdfViewerWrapper">
-            <div class="pdf-canvas-container" id="pdfCanvasContainer">
-              <canvas id="pdfCanvasSingle"></canvas>
-              <div class="pdf-page-shadow"></div>
-            </div>
-            <div class="page-floating-indicator" id="pageFloatingIndicator">Halaman 1</div>
-          </div>
-          
-          <!-- Zoom Controls -->
-          <div class="zoom-controls" id="zoomControls">
-            <button class="zoom-btn" id="btnZoomOut" title="Zoom Out (Ctrl+-)">🔍−</button>
-            <span class="zoom-level" id="zoomLevel">100%</span>
-            <button class="zoom-btn" id="btnZoomIn" title="Zoom In (Ctrl++)">🔍+</button>
-            <button class="zoom-btn" id="btnZoomReset" title="Reset Zoom (Ctrl+0)">↺</button>
-            <button class="zoom-btn" id="btnZoomFit" title="Fit to Screen">⊡</button>
-            <button class="zoom-btn" id="btnFullscreen" title="Fullscreen (F)">⛶</button>
-            <button class="zoom-btn download-btn" id="btnDownload" title="Download PDF">💾</button>
-          </div>
-          
-          <!-- Loading Overlay -->
-          <div class="load-overlay hidden" id="readerLoading">
-            <div class="spinner-container">
-              <div class="spinner-ring"></div>
-              <div class="spinner-ring"></div>
-              <div class="spinner-ring"></div>
-              <div class="spinner-icon" id="loadingIcon">📖</div>
-            </div>
-            <div class="load-title" id="loadingTitle">Membuka PDF</div>
-            <div class="progress-container">
-              <div class="progress-bar" id="progressBar"></div>
-            </div>
-            <div class="load-text" id="readerLoadText">Mempersiapkan dokumen...</div>
-            <div class="load-status">
-              <span class="dot"></span>
-              <span id="loadingStatus">Menghubungi server...</span>
-            </div>
-            <div class="download-stats" id="downloadStats" style="display:none;">
-              <div class="download-stat">
-                <span class="icon">📦</span>
-                <span id="statSize">0 KB</span>
-              </div>
-              <div class="download-stat">
-                <span class="icon">⚡</span>
-                <span id="statSpeed">0 KB/s</span>
-              </div>
-            </div>
-            <button class="retry-btn hidden" id="retryBtn">
-              <span>🔄</span> Coba Lagi
-            </button>
-          </div>
-        </div>
-        
-        <div class="reader-bottombar">
-          <button class="nav-btn" id="btnPrev" disabled>◀</button>
-          <span class="page-indicator" id="pageIndicator">0 / 0</span>
-          <button class="nav-btn" id="btnNext" disabled>▶</button>
-        </div>
-      </div>
+    <!-- ─── CANVAS PARTIKEL ─── -->
+    <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+    <!-- ─── TOAST ─── -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle" id="toastIcon"></i>
+        <span id="toastMessage">Berhasil!</span>
     </div>
-  </div>
-  <div class="toast" id="toast"></div>
 
-  <script>
-    (function() {
-      // ============ CONFIG ============
-      var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwG0iQUK0-2evTzBfjM3pmEVBHDrlzroyJzdk-9ZfrSaA8l7POsziMHSXjSitUWeZrN/exec';
-      var SPREADSHEET_ID = '1HWxBGy3Q40euhy61csEocfbXXNc6bzM1cLjzz8u6Eyg';
-      var SHEET_NAME = 'E-Book Library';
-      
-      // Cache configuration
-      var PDF_CACHE_MAX = 5;
-      var PDF_CACHE_TTL = 30 * 60 * 1000;
-      
-      var state = {
-        books: [], currentBook: null, pdfDoc: null,
-        totalPages: 10, currentPage: 1, isFlipping: false,
-        syncTimer: null,
-        pdfCache: {},
-        zoomLevel: 1.0,
-        zoomMin: 0.5,
-        zoomMax: 5.0,
-        zoomStep: 0.25,
-        pdfBase64: null,
-        downloadStartTime: 0,
-        downloadBytes: 0,
-        // Drag state
-        isDragging: false,
-        dragStartX: 0,
-        dragStartY: 0,
-        translateX: 0,
-        translateY: 0,
-        hasMoved: false
-      };
+    <!-- ─── CONFIRMATION DIALOG ─── -->
+    <div class="dialog-overlay" id="confirmDialog">
+        <div class="dialog-box">
+            <h3 id="dialogTitle">Konfirmasi</h3>
+            <p id="dialogMessage">Apakah Anda yakin?</p>
+            <div class="dialog-actions">
+                <button class="btn-cancel" id="dialogCancel">Batal</button>
+                <button class="btn-confirm" id="dialogConfirm">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
 
-      function $(id) { return document.getElementById(id); }
-      
-      var DOM = {};
-      function initDOM() {
-        DOM.syncDot = $('syncDot'); DOM.syncText = $('syncText');
-        DOM.libLoading = $('libLoading'); DOM.bookScroll = $('bookScroll');
-        DOM.refreshBtn = $('refreshBtn'); DOM.readerView = $('readerView');
-        DOM.readerLoading = $('readerLoading'); DOM.readerLoadText = $('readerLoadText');
-        DOM.loadingTitle = $('loadingTitle');
-        DOM.loadingIcon = $('loadingIcon');
-        DOM.loadingStatus = $('loadingStatus');
-        DOM.progressBar = $('progressBar');
-        DOM.downloadStats = $('downloadStats');
-        DOM.statSize = $('statSize');
-        DOM.statSpeed = $('statSpeed');
-        DOM.retryBtn = $('retryBtn');
-        DOM.pdfViewerWrapper = $('pdfViewerWrapper');
-        DOM.pdfCanvasContainer = $('pdfCanvasContainer');
-        DOM.pdfCanvasSingle = $('pdfCanvasSingle');
-        DOM.pageFloatingIndicator = $('pageFloatingIndicator');
-        DOM.zoomControls = $('zoomControls');
-        DOM.zoomLevel = $('zoomLevel');
-        DOM.btnZoomIn = $('btnZoomIn');
-        DOM.btnZoomOut = $('btnZoomOut');
-        DOM.btnZoomReset = $('btnZoomReset');
-        DOM.btnZoomFit = $('btnZoomFit');
-        DOM.btnFullscreen = $('btnFullscreen');
-        DOM.btnDownload = $('btnDownload');
-        DOM.pageIndicator = $('pageIndicator'); DOM.readerBookTitle = $('readerBookTitle');
-        DOM.btnPrev = $('btnPrev'); DOM.btnNext = $('btnNext');
-        DOM.btnBack = $('btnBack'); DOM.toast = $('toast');
-      }
+    <!-- ─── KONTEN UTAMA ─── -->
+    <div class="container" id="mainContent">
 
-      function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
-      function escHtml(s) { return s ? String(s).replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]; }) : ''; }
-      
-      function toast(msg, type, dur) {
-        if (!DOM.toast) return;
-        DOM.toast.textContent = msg; DOM.toast.className = 'toast show ' + (type || 'info');
-        clearTimeout(state._tt); state._tt = setTimeout(function() { DOM.toast.classList.remove('show'); }, dur || 2500);
-      }
+        <!-- HEADER -->
+        <header class="header" role="banner">
+            <div class="header-left">
+                <h1 id="mainTitle" aria-label="SIM Upload">📂 SIM Upload</h1>
+                <span class="sub">Akademik Hub</span>
+            </div>
+            <div class="header-actions">
+                <span class="live-badge" aria-live="polite" aria-atomic="true">
+                    <span class="pulse-dot" aria-hidden="true"></span>
+                    <span id="totalItemsBadge">0 Layanan</span>
+                </span>
+                <span class="sync-badge" id="syncBadge">
+                    <i class="fas fa-circle" aria-hidden="true"></i> Sinkron
+                </span>
+                <a href="admin-login.html" class="admin-btn" title="Dashboard Admin" rel="noopener noreferrer" aria-label="Halaman admin">
+                    <i class="fas fa-user-shield" aria-hidden="true"></i> Admin
+                </a>
+                <button class="theme-toggle" id="themeToggle" aria-label="Ganti tema tampilan">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
+                </button>
+            </div>
+        </header>
 
-      function setSyncStatus(status, text) {
-        if (DOM.syncDot) DOM.syncDot.className = 'sync-dot ' + status;
-        if (DOM.syncText) DOM.syncText.textContent = text || 'Live';
-      }
+        <!-- TOOLBAR -->
+        <div class="toolbar" id="toolbar" role="toolbar" aria-label="Filter dan pencarian">
+            <div class="tabs" id="tabsContainer" role="tablist" aria-label="Filter kategori"></div>
+            <div class="search-wrap">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <label for="searchInput" class="sr-only">Cari layanan</label>
+                <input type="text" id="searchInput" placeholder="Cari layanan..." aria-label="Cari layanan">
+                <button class="clear-search" id="clearSearch" aria-label="Hapus pencarian">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="action-btns">
+                <button id="viewToggle" aria-label="Ganti mode tampilan" title="Mode Tampilan">
+                    <i class="fas fa-th" aria-hidden="true"></i>
+                </button>
+                <button id="pauseCarousel" class="carousel-pause-btn" aria-label="Jeda putar otomatis" title="Jeda Carousel" style="display:none;">
+                    <i class="fas fa-pause" aria-hidden="true"></i>
+                </button>
+                <button id="resetBtn" class="reset-btn" aria-label="Reset semua filter" title="Reset semua filter">
+                    <i class="fas fa-undo-alt" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
 
-      function showLibLoading(s) { if (DOM.libLoading) DOM.libLoading.classList.toggle('hidden', !s); }
-      
-      function updateLoadingState(stage, title, icon, text, status, progress) {
-        if (DOM.loadingTitle) DOM.loadingTitle.textContent = title || 'Memproses';
-        if (DOM.loadingIcon) DOM.loadingIcon.textContent = icon || '📖';
-        if (DOM.readerLoadText) DOM.readerLoadText.textContent = text || '';
-        if (DOM.loadingStatus) DOM.loadingStatus.textContent = status || '';
-        if (DOM.progressBar) DOM.progressBar.style.width = (progress || 0) + '%';
-      }
+        <!-- CAROUSEL WRAPPER -->
+        <div class="carousel-wrapper" id="carouselWrapper" role="region" aria-roledescription="carousel" aria-label="Layanan tersedia">
+            <div class="progress-timer" id="progressTimer" aria-hidden="true"></div>
+            <div class="carousel-track-container">
+                <div class="carousel-track" id="carouselTrack" role="group" aria-live="polite"></div>
+            </div>
+            <div class="carousel-controls" id="carouselControls">
+                <button id="prevBtn" aria-label="Slide sebelumnya"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                <div class="dots" id="dotsContainer" role="tablist" aria-label="Navigasi slide"></div>
+                <button id="nextBtn" aria-label="Slide berikutnya"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
+                <span class="carousel-counter" id="counter" aria-live="polite">1 / 1</span>
+            </div>
+        </div>
 
-      function showReaderLoading(s, options) {
-        if (!DOM.readerLoading) return;
-        
-        if (s) {
-          DOM.readerLoading.classList.remove('hidden');
-          DOM.retryBtn.classList.add('hidden');
-          DOM.downloadStats.style.display = 'none';
-          
-          var opts = options || {};
-          updateLoadingState(
-            opts.stage || 'connecting',
-            opts.title || 'Membuka PDF',
-            opts.icon || '📖',
-            opts.text || 'Mempersiapkan...',
-            opts.status || 'Menghubungi server...',
-            opts.progress || 0
-          );
-        } else {
-          DOM.readerLoading.classList.add('hidden');
-        }
-      }
+        <!-- ─── STATISTIK / LEADERBOARD ─── -->
+        <div class="stats-section" id="statsSection">
+            <div class="stats-header">
+                <h3><i class="fas fa-chart-simple" aria-hidden="true"></i> Popularitas Layanan</h3>
+                <span class="total-clicks">Total klik: <strong id="totalClicksDisplay">0</strong></span>
+            </div>
+            <div class="stats-list" id="statsList"></div>
+        </div>
 
-      function updateDownloadProgress(downloadedBytes, totalBytes) {
-        if (!DOM.downloadStats) return;
-        
-        DOM.downloadStats.style.display = 'flex';
-        
-        var downloadedMB = (downloadedBytes / (1024 * 1024)).toFixed(2);
-        var totalMB = totalBytes ? (totalBytes / (1024 * 1024)).toFixed(2) : '?';
-        
-        if (DOM.statSize) DOM.statSize.textContent = downloadedMB + ' / ' + totalMB + ' MB';
-        
-        if (state.downloadStartTime) {
-          var elapsed = (Date.now() - state.downloadStartTime) / 1000;
-          if (elapsed > 0) {
-            var speed = (downloadedBytes / (1024 * elapsed)).toFixed(1);
-            if (DOM.statSpeed) DOM.statSpeed.textContent = speed + ' KB/s';
-          }
-        }
-        
-        if (totalBytes && DOM.progressBar) {
-          var pct = Math.round((downloadedBytes / totalBytes) * 100);
-          DOM.progressBar.style.width = pct + '%';
-        }
-      }
+    </div>
 
-      function updateNav() {
-        if (DOM.btnPrev) DOM.btnPrev.disabled = state.currentPage <= 1 || state.isFlipping;
-        if (DOM.btnNext) DOM.btnNext.disabled = state.currentPage >= state.totalPages || state.isFlipping;
-        if (DOM.pageIndicator) {
-          DOM.pageIndicator.textContent = state.currentPage + ' / ' + state.totalPages;
-        }
-        if (DOM.pageFloatingIndicator) {
-          DOM.pageFloatingIndicator.textContent = 'Halaman ' + state.currentPage + ' dari ' + state.totalPages;
-        }
-      }
+    <script>
+        (function() {
+            'use strict';
 
-      function clearCanvas(c) { if (c) { c.width = 1; c.height = 1; c.getContext('2d').clearRect(0, 0, 1, 1); } }
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // KONFIGURASI
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      function extractFileId(url) {
-        if (!url) return '';
-        var patterns = [/\/d\/([a-zA-Z0-9_-]+)/, /[?&]id=([a-zA-Z0-9_-]+)/, /\/file\/d\/([a-zA-Z0-9_-]+)/];
-        for (var i = 0; i < patterns.length; i++) {
-          var match = String(url).match(patterns[i]);
-          if (match && match[1]) return match[1];
-        }
-        return String(url);
-      }
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbzhqhtAiV73qbU_qVDo61lj76XFTatwxYt2nERJjEL5oBJ_J5npvy5-ukebXpmRjfO8Xw/exec';
 
-      // ============ PDF CACHE MANAGEMENT ============
-      function getCachedPDF(fileId) {
-        var cached = state.pdfCache[fileId];
-        if (cached && (Date.now() - cached.timestamp) < PDF_CACHE_TTL) {
-          console.log('💾 Cache hit for:', fileId);
-          return cached;
-        }
-        return null;
-      }
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // DATA & STATE
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      function setCachedPDF(fileId, base64, pdfDoc) {
-        var keys = Object.keys(state.pdfCache);
-        if (keys.length >= PDF_CACHE_MAX) {
-          var oldest = keys.reduce(function(a, b) {
-            return state.pdfCache[a].timestamp < state.pdfCache[b].timestamp ? a : b;
-          });
-          delete state.pdfCache[oldest];
-          console.log('🗑️ Cache evicted:', oldest);
-        }
-        
-        state.pdfCache[fileId] = {
-          base64: base64,
-          pdfDoc: pdfDoc,
-          timestamp: Date.now()
-        };
-        console.log('💾 Cached PDF:', fileId, 'Total cached:', Object.keys(state.pdfCache).length);
-      }
+            let APP_DATA = [];
+            let isLoading = false;
+            let isAutoPlayPaused = false;
+            let hitCooldowns = {};
 
-      // ============ FETCH BOOKS ============
-      async function fetchBooks(silent) {
-        if (!silent) { showLibLoading(true); setSyncStatus('syncing', 'Syncing...'); }
-        
-        try {
-          var res = await fetch(WEBAPP_URL + '?_=' + Date.now());
-          var data = await res.json();
-          
-          if (data.success && data.books && data.books.length > 0) {
-            state.books = data.books.map(function(b) {
-              return {
-                title: b.title || 'PDF Document',
-                url: b.url || '',
-                fileId: b.fileId || extractFileId(b.url),
-                academicYear: b.academicYear || '2024/2025',
-                category: b.category || 'PDF',
-                author: b.author || '',
-                rowNumber: b.rowNumber || 0
-              };
+            const STORAGE_KEYS = {
+                THEME: 'simupload_theme',
+                VIEW_MODE: 'simupload_viewmode',
+                FILTER: 'simupload_filter',
+                FAVORITES: 'simupload_favorites',
+                HITS: 'simupload_hits',
+                CACHED_DATA: 'simupload_cached_data',
+                CACHED_TIMESTAMP: 'simupload_cached_timestamp',
+                AUTOPLAY_PAUSED: 'simupload_autoplay_paused'
+            };
+
+            let state = {
+                theme: 'dark',
+                viewMode: 'carousel',
+                filterTag: 'Semua',
+                searchQuery: '',
+                currentIndex: 0,
+                favorites: {},
+                hits: {},
+                autoplayPaused: false
+            };
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // API FUNCTIONS
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            let retryCount = 0;
+            const MAX_RETRIES = 3;
+            const RETRY_DELAYS = [1000, 3000, 7000];
+
+            async function fetchWithRetry(url) {
+                for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            mode: 'cors',
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        const json = await response.json();
+                        return json;
+                    } catch (error) {
+                        if (attempt === MAX_RETRIES) throw error;
+                        console.warn(`Retry ${attempt + 1}/${MAX_RETRIES} setelah ${RETRY_DELAYS[attempt]}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
+                    }
+                }
+            }
+
+            async function loadDataFromAPI() {
+                try {
+                    isLoading = true;
+                    showSkeletonLoader();
+                    const json = await fetchWithRetry(GAS_URL + '?action=getServices');
+                    
+                    if (json.success && json.data && Array.isArray(json.data)) {
+                        // Validasi dan sanitasi data
+                        APP_DATA = json.data.map(item => ({
+                            id: item.id || generateId(),
+                            title: sanitizeText(item.title || 'Tanpa Judul'),
+                            desc: sanitizeText(item.desc || 'Tidak ada deskripsi'),
+                            tag: sanitizeText(item.tag || 'Umum'),
+                            icon: isValidIcon(item.icon) ? item.icon : 'fa-question-circle',
+                            url: isValidUrl(item.url) ? item.url : '#'
+                        }));
+                        
+                        // Cache data untuk offline
+                        setStorage(STORAGE_KEYS.CACHED_DATA, APP_DATA);
+                        setStorage(STORAGE_KEYS.CACHED_TIMESTAMP, Date.now());
+                        
+                        render();
+                        retryCount = 0;
+                        showToast('Data berhasil dimuat! ✅', 'success');
+                        return true;
+                    } else {
+                        throw new Error(json.message || 'Format data tidak valid');
+                    }
+                } catch (error) {
+                    console.error('Load data error:', error);
+                    
+                    // Coba load dari cache
+                    const cached = getStorage(STORAGE_KEYS.CACHED_DATA, null);
+                    if (cached && cached.length > 0) {
+                        APP_DATA = cached;
+                        render();
+                        const timestamp = getStorage(STORAGE_KEYS.CACHED_TIMESTAMP, 0);
+                        const minutes = Math.floor((Date.now() - timestamp) / 60000);
+                        showToast(`Menggunakan data cache (${minutes} menit lalu) ⚠️`, 'error');
+                        return false;
+                    }
+                    
+                    showErrorState(error.message);
+                    return false;
+                } finally {
+                    isLoading = false;
+                }
+            }
+
+            function generateId() {
+                return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            function sanitizeText(text) {
+                if (typeof text !== 'string') return '';
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;')
+                    .trim();
+            }
+
+            function isValidIcon(icon) {
+                if (typeof icon !== 'string') return false;
+                return icon.startsWith('fa-') && icon.length > 3;
+            }
+
+            function isValidUrl(url) {
+                if (typeof url !== 'string') return false;
+                try {
+                    const parsed = new URL(url);
+                    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+                } catch {
+                    return false;
+                }
+            }
+
+            function reloadData() {
+                loadDataFromAPI().then(success => {
+                    if (success) showSyncBadge();
+                });
+            }
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // SKELETON LOADER
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            function showSkeletonLoader() {
+                const count = window.innerWidth <= 768 ? 1 : window.innerWidth <= 1100 ? 2 : 3;
+                let html = '';
+                for (let i = 0; i < count; i++) {
+                    html += `
+                        <div class="skeleton-card" aria-hidden="true">
+                            <div class="skeleton-icon"></div>
+                            <div class="skeleton-tag"></div>
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-desc"></div>
+                            <div class="skeleton-btn"></div>
+                        </div>
+                    `;
+                }
+                track.innerHTML = html;
+            }
+
+            function showErrorState(message) {
+                track.innerHTML = `
+                    <div class="error-state" style="width:100%;">
+                        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                        <h3>Gagal Memuat Data</h3>
+                        <p>${sanitizeText(message || 'Terjadi kesalahan tidak diketahui.')}</p>
+                        <button onclick="window.location.reload()" aria-label="Coba muat ulang halaman">
+                            <i class="fas fa-redo" aria-hidden="true"></i> Coba Lagi
+                        </button>
+                    </div>
+                `;
+            }
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // STORAGE HELPERS
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            function getStorage(key, fallback) {
+                try {
+                    const val = localStorage.getItem(key);
+                    if (val === null) return fallback;
+                    const parsed = JSON.parse(val);
+                    return parsed;
+                } catch {
+                    // Jika corrupt, hapus dan kembalikan fallback
+                    try { localStorage.removeItem(key); } catch {}
+                    return fallback;
+                }
+            }
+
+            function setStorage(key, value) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                } catch (e) {
+                    console.warn('Gagal menyimpan ke localStorage:', e.message);
+                    showToast('Penyimpanan lokal penuh. Bersihkan data lama.', 'error');
+                }
+            }
+
+            function loadState() {
+                state.theme = getStorage(STORAGE_KEYS.THEME, 'dark');
+                state.viewMode = getStorage(STORAGE_KEYS.VIEW_MODE, 'carousel');
+                state.filterTag = getStorage(STORAGE_KEYS.FILTER, 'Semua');
+                state.favorites = getStorage(STORAGE_KEYS.FAVORITES, {});
+                state.hits = getStorage(STORAGE_KEYS.HITS, {});
+                state.autoplayPaused = getStorage(STORAGE_KEYS.AUTOPLAY_PAUSED, false);
+                isAutoPlayPaused = state.autoplayPaused;
+            }
+
+            function saveState() {
+                setStorage(STORAGE_KEYS.THEME, state.theme);
+                setStorage(STORAGE_KEYS.VIEW_MODE, state.viewMode);
+                setStorage(STORAGE_KEYS.FILTER, state.filterTag);
+                setStorage(STORAGE_KEYS.FAVORITES, state.favorites);
+                setStorage(STORAGE_KEYS.HITS, state.hits);
+                setStorage(STORAGE_KEYS.AUTOPLAY_PAUSED, isAutoPlayPaused);
+            }
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // DOM REFS
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            const $ = (s) => document.querySelector(s);
+            const $$ = (s) => document.querySelectorAll(s);
+
+            const track = $('#carouselTrack');
+            const dotsContainer = $('#dotsContainer');
+            const tabsContainer = $('#tabsContainer');
+            const searchInput = $('#searchInput');
+            const clearSearchBtn = $('#clearSearch');
+            const counter = $('#counter');
+            const progressBar = $('#progressTimer');
+            const prevBtn = $('#prevBtn');
+            const nextBtn = $('#nextBtn');
+            const themeToggle = $('#themeToggle');
+            const viewToggle = $('#viewToggle');
+            const pauseBtn = $('#pauseCarousel');
+            const resetBtn = $('#resetBtn');
+            const wrapper = $('#carouselWrapper');
+            const controls = $('#carouselControls');
+            const toastEl = $('#toast');
+            const toastMsg = $('#toastMessage');
+            const toastIcon = $('#toastIcon');
+            const totalBadge = $('#totalItemsBadge');
+            const statsList = $('#statsList');
+            const totalClicksDisplay = $('#totalClicksDisplay');
+            const syncBadge = $('#syncBadge');
+            const offlineBanner = $('#offlineBanner');
+            const confirmDialog = $('#confirmDialog');
+            const dialogTitle = $('#dialogTitle');
+            const dialogMessage = $('#dialogMessage');
+            const dialogCancel = $('#dialogCancel');
+            const dialogConfirm = $('#dialogConfirm');
+
+            let autoPlayInterval = null,
+                progressInterval = null,
+                progressValue = 100;
+            const AUTO_PLAY_DELAY = 5000,
+                PROGRESS_STEP = 50;
+            let syncBadgeTimeout = null;
+            let dialogResolve = null;
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // ONLINE/OFFLINE DETECTION
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            function updateOnlineStatus() {
+                if (navigator.onLine) {
+                    offlineBanner.classList.remove('show');
+                } else {
+                    offlineBanner.classList.add('show');
+                    // Load cache jika ada
+                    if (APP_DATA.length === 0) {
+                        const cached = getStorage(STORAGE_KEYS.CACHED_DATA, null);
+                        if (cached && cached.length > 0) {
+                            APP_DATA = cached;
+                            render();
+                        }
+                    }
+                }
+            }
+
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            updateOnlineStatus();
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // CONFIRMATION DIALOG
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            function showConfirm(title, message) {
+                return new Promise((resolve) => {
+                    dialogTitle.textContent = title;
+                    dialogMessage.textContent = message;
+                    dialogResolve = resolve;
+                    confirmDialog.classList.add('active');
+                    dialogCancel.focus();
+                });
+            }
+
+            function hideConfirm(result) {
+                confirmDialog.classList.remove('active');
+                if (dialogResolve) {
+                    dialogResolve(result);
+                    dialogResolve = null;
+                }
+            }
+
+            dialogCancel.addEventListener('click', () => hideConfirm(false));
+            dialogConfirm.addEventListener('click', () => hideConfirm(true));
+            confirmDialog.addEventListener('click', (e) => {
+                if (e.target === confirmDialog) hideConfirm(false);
             });
-            renderBooks();
-            setSyncStatus('', 'Live');
-          } else {
-            state.books = [];
-            renderBooks();
-            setSyncStatus('', 'Live');
-          }
-        } catch (e) {
-          if (!silent) setSyncStatus('offline', 'Offline');
-        }
-        
-        if (!silent) showLibLoading(false);
-      }
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && confirmDialog.classList.contains('active')) {
+                    hideConfirm(false);
+                }
+            });
 
-      function renderBooks() {
-        if (!DOM.bookScroll) return;
-        if (!state.books.length) {
-          DOM.bookScroll.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary);"><div style="font-size:3rem;">📭</div><div>Belum ada buku di B2:B</div><div style="font-size:0.7rem;">Tambahkan link PDF di kolom B</div></div>';
-          return;
-        }
-        
-        var icons = ['📕','📗','📘','📙','📓','📔','📒','📑','📖','📚'];
-        var html = '<div class="book-grid">';
-        state.books.forEach(function(b, i) {
-          var fileId = b.fileId || extractFileId(b.url);
-          var isCached = !!state.pdfCache[fileId];
-          html += '<div class="book-card' + (isCached ? ' cached' : '') + '" data-fileid="' + escHtml(fileId) + '" data-title="' + escHtml(b.title) + '" data-url="' + escHtml(b.url) + '">';
-          html += '<div class="emoji">' + icons[i % 10] + '</div>';
-          html += '<div class="title">' + escHtml(b.title) + '</div>';
-          if (b.author && b.author !== 'Unknown Author') {
-            html += '<div style="font-size:0.55rem;color:var(--accent);">✍️ ' + escHtml(b.author) + '</div>';
-          }
-          html += '<div class="link">📎 B' + (b.rowNumber || (i+2)) + '</div>';
-          html += '<div class="badge">' + escHtml(b.category || 'PDF') + '</div>';
-          html += '</div>';
-        });
-        html += '</div>';
-        DOM.bookScroll.innerHTML = html;
-        
-        DOM.bookScroll.querySelectorAll('.book-card').forEach(function(card) {
-          card.addEventListener('click', function() {
-            var fid = this.getAttribute('data-fileid');
-            var title = this.getAttribute('data-title');
-            var url = this.getAttribute('data-url');
-            openBook(fid, title, url);
-          });
-        });
-      }
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // FUNGSI RENDER
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      // ============ OPEN BOOK (WITH CACHE) ============
-      async function openBook(fileId, title, url) {
-        console.log('📖 Opening:', title, fileId);
-        state.currentBook = { fileId: fileId, title: title, url: url };
-        state.pdfDoc = null;
-        state.totalPages = 10;
-        state.currentPage = 1;
-        state.isFlipping = false;
-        state.pdfBase64 = null;
-        state.downloadStartTime = 0;
-        state.downloadBytes = 0;
-        
-        // Reset drag position
-        state.translateX = 0;
-        state.translateY = 0;
-
-        if (DOM.readerBookTitle) DOM.readerBookTitle.textContent = title;
-        if (DOM.readerView) DOM.readerView.classList.add('active');
-        clearCanvas(DOM.pdfCanvasSingle);
-        updateNav();
-        resetViewPosition();
-        updateZoom(1.0, false);
-
-        // CHECK CACHE FIRST
-        var cached = getCachedPDF(fileId);
-        if (cached) {
-          console.log('⚡ Using cached PDF!');
-          
-          showReaderLoading(true, {
-            stage: 'cache',
-            title: 'Memuat dari Cache',
-            icon: '💾',
-            text: 'Mengambil PDF dari penyimpanan lokal...',
-            status: 'Cache ditemukan!',
-            progress: 80
-          });
-          
-          await sleep(300);
-          
-          updateLoadingState('rendering', 'Merender Halaman', '🎨', 'Menyiapkan tampilan PDF...', 'Cache loaded', 90);
-          
-          if (cached.pdfDoc) {
-            state.pdfDoc = cached.pdfDoc;
-            state.totalPages = cached.pages || state.pdfDoc.numPages || 10;
-            state.pdfBase64 = cached.base64;
-            
-            await sleep(200);
-            updateLoadingState('done', 'Selesai!', '✅', 'PDF siap dibaca', 'Loaded from cache', 100);
-            await sleep(300);
-            
-            await renderSinglePage(1);
-            showReaderLoading(false);
-            updateNav();
-            fitToScreen();
-            toast('⚡ Loaded from cache!', 'success', 2000);
-            return;
-          }
-        }
-
-        // DOWNLOAD PDF WITH PROGRESS
-        showReaderLoading(true, {
-          stage: 'connecting',
-          title: 'Menghubungi Server',
-          icon: '🌐',
-          text: 'Membuka koneksi ke Google Drive...',
-          status: 'Connecting...',
-          progress: 5
-        });
-        
-        await sleep(400);
-        
-        try {
-          var fullBase64 = '';
-          var chunkIndex = 0;
-          var totalChunks = 1;
-          state.downloadStartTime = Date.now();
-          
-          updateLoadingState('downloading', 'Mengunduh PDF', '📥', 'Mengambil data dari server...', 'Download dimulai', 10);
-          
-          while (chunkIndex < 200) {
-            var chunkUrl = WEBAPP_URL + '?action=getPDFChunk&fileId=' + fileId + '&chunk=' + chunkIndex;
-            
-            try {
-              var chunkRes = await fetch(chunkUrl);
-              var chunkData = await chunkRes.json();
-              
-              if (!chunkData.success) break;
-              
-              fullBase64 += chunkData.data;
-              totalChunks = chunkData.totalChunks || 1;
-              state.downloadBytes = fullBase64.length * 0.75;
-              
-              var progress = 10 + Math.round((chunkIndex + 1) / totalChunks * 60);
-              var chunkStatus = 'Mengunduh bagian ' + (chunkIndex + 1) + ' dari ' + totalChunks;
-              
-              updateLoadingState('downloading', 'Mengunduh PDF', '📥', chunkStatus, 'Download berlangsung...', progress);
-              updateDownloadProgress(state.downloadBytes, chunkData.totalSize);
-              
-              if (chunkIndex >= totalChunks - 1) break;
-              chunkIndex++;
-              
-            } catch (e) { 
-              console.error('Chunk error:', e);
-              break; 
+            function getFilteredData() {
+                let data = [...APP_DATA];
+                if (state.filterTag !== 'Semua') {
+                    if (state.filterTag === 'Favorit') {
+                        data = data.filter(item => state.favorites[item.id]);
+                    } else {
+                        data = data.filter(item => item.tag === state.filterTag);
+                    }
+                }
+                if (state.searchQuery.trim() !== '') {
+                    const q = state.searchQuery.trim().toLowerCase();
+                    data = data.filter(item =>
+                        item.title.toLowerCase().includes(q) ||
+                        item.desc.toLowerCase().includes(q) ||
+                        item.tag.toLowerCase().includes(q)
+                    );
+                }
+                return data;
             }
-          }
 
-          if (!fullBase64) throw new Error('Gagal download PDF');
-          console.log('✅ Downloaded:', fullBase64.length);
-          
-          state.pdfBase64 = fullBase64;
-          
-          updateLoadingState('processing', 'Memproses PDF', '⚙️', 'Mengkonversi data...', 'Processing...', 75);
-          await sleep(300);
-          
-          updateLoadingState('decoding', 'Mendekode PDF', '🔓', 'Membaca struktur dokumen...', 'Decoding...', 80);
-          await sleep(200);
-          
-          updateLoadingState('rendering', 'Merender PDF', '🎨', 'Menyiapkan halaman pertama...', 'Rendering...', 85);
-          
-          var binaryStr = atob(fullBase64);
-          var bytes = new Uint8Array(binaryStr.length);
-          for (var j = 0; j < binaryStr.length; j++) bytes[j] = binaryStr.charCodeAt(j);
+            function render() {
+                const filtered = getFilteredData();
+                totalBadge.textContent = `${APP_DATA.length} Layanan`;
+                renderTabs();
+                renderCards(filtered);
+                renderStats();
+                updateViewMode();
 
-          if (typeof pdfjsLib === 'undefined') {
-            updateLoadingState('loading-lib', 'Memuat Library', '📚', 'Mengunduh PDF.js...', 'Loading library...', 88);
-            await loadPDFJS();
-          }
-
-          if (typeof pdfjsLib !== 'undefined') {
-            updateLoadingState('parsing', 'Menganalisa PDF', '🔍', 'Membaca jumlah halaman...', 'Parsing document...', 90);
-            
-            var loadingTask = pdfjsLib.getDocument({ data: bytes, disableAutoFetch: true, disableStream: true });
-            state.pdfDoc = await loadingTask.promise;
-            state.totalPages = state.pdfDoc.numPages;
-            
-            setCachedPDF(fileId, fullBase64, state.pdfDoc);
-            state.pdfCache[fileId].pages = state.totalPages;
-            
-            updateLoadingState('finalizing', 'Menyelesaikan', '✨', 'Hampir siap...', 'Finalizing...', 95);
-            await sleep(200);
-            
-            updateLoadingState('done', 'Selesai!', '✅', state.totalPages + ' halaman siap dibaca', 'Document ready', 100);
-            await sleep(300);
-            
-            await renderSinglePage(1);
-            showReaderLoading(false);
-            updateNav();
-            fitToScreen();
-            toast('✅ ' + state.totalPages + ' halaman', 'success', 2000);
-          } else {
-            updateLoadingState('fallback', 'Mode Preview', '⚠️', 'PDF.js tidak tersedia', 'Fallback mode', 100);
-            await sleep(500);
-            renderFallbackPage(1);
-            showReaderLoading(false);
-            updateNav();
-            fitToScreen();
-            toast('⚠️ Preview mode', 'error', 3000);
-          }
-
-        } catch (e) {
-          console.error('Error:', e);
-          updateLoadingState('error', 'Gagal Memuat', '❌', e.message, 'Terjadi kesalahan', 0);
-          
-          if (DOM.retryBtn) DOM.retryBtn.classList.remove('hidden');
-          if (DOM.progressBar) DOM.progressBar.style.width = '0%';
-          
-          toast('❌ ' + e.message, 'error', 5000);
-          renderFallbackPage(1);
-          updateNav();
-        }
-      }
-
-      // ============ PDF.JS LOADER (SILENT) ============
-      function loadPDFJS() {
-        return new Promise(function(resolve) {
-          if (typeof pdfjsLib !== 'undefined') {
-            try {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-            } catch(e) {}
-            resolve(); return;
-          }
-          
-          var script = document.createElement('script');
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-          script.async = true;
-          script.onload = function() {
-            if (typeof pdfjsLib !== 'undefined') {
-              try { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } catch(e) {}
-              console.log('✅ PDF.js ready');
+                const cards = track.querySelectorAll('.card');
+                const totalSlides = cards.length;
+                if (state.viewMode === 'carousel') {
+                    controls.classList.remove('hidden');
+                    pauseBtn.style.display = 'flex';
+                    if (isAutoPlayPaused) {
+                        pauseBtn.classList.add('paused');
+                        pauseBtn.querySelector('i').className = 'fas fa-play';
+                    } else {
+                        pauseBtn.classList.remove('paused');
+                        pauseBtn.querySelector('i').className = 'fas fa-pause';
+                    }
+                    const cardsPerView = getCardsPerView();
+                    const maxIndex = Math.max(0, totalSlides - cardsPerView);
+                    if (state.currentIndex > maxIndex) state.currentIndex = maxIndex;
+                    if (state.currentIndex < 0) state.currentIndex = 0;
+                    updateDotsAndCounter(totalSlides);
+                    updateCarousel(false);
+                    startAutoPlay();
+                } else {
+                    controls.classList.add('hidden');
+                    pauseBtn.style.display = 'none';
+                    stopAutoPlay();
+                    progressBar.classList.add('hidden');
+                }
+                bindCardEvents();
+                saveState();
             }
-            resolve();
-          };
-          script.onerror = function() {
-            console.warn('⚠️ PDF.js unavailable');
-            resolve();
-          };
-          document.head.appendChild(script);
-        });
-      }
 
-      // ============ VIEW POSITION ============
-      function resetViewPosition() {
-        state.translateX = 0;
-        state.translateY = 0;
-        applyViewTransform();
-      }
-      
-      function applyViewTransform() {
-        if (DOM.pdfCanvasContainer) {
-          var scale = state.zoomLevel;
-          DOM.pdfCanvasContainer.style.transform = 'translate(' + state.translateX + 'px, ' + state.translateY + 'px) scale(' + scale + ')';
-        }
-      }
+            function renderTabs() {
+                const tags = ['Semua', 'Favorit', ...new Set(APP_DATA.map(item => item.tag))];
+                let html = '';
+                tags.forEach(tag => {
+                    let count = 0;
+                    if (tag === 'Semua') count = APP_DATA.length;
+                    else if (tag === 'Favorit') count = Object.values(state.favorites).filter(v => v === true).length;
+                    else count = APP_DATA.filter(item => item.tag === tag).length;
+                    const active = state.filterTag === tag ? 'active' : '';
+                    const selected = state.filterTag === tag ? 'true' : 'false';
+                    html += `<button class="${active}" data-tag="${tag}" role="tab" aria-selected="${selected}">${tag} <span class="count">${count}</span></button>`;
+                });
+                tabsContainer.innerHTML = html;
+                tabsContainer.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        state.filterTag = this.dataset.tag;
+                        state.currentIndex = 0;
+                        render();
+                        if (state.viewMode === 'carousel') resetProgress();
+                    });
+                });
+            }
 
-      // ============ RENDER FUNCTIONS ============
-      async function renderSinglePage(pageNum) {
-        if (!state.currentBook || !pageNum) return;
-        
-        if (state.pdfDoc && pageNum <= state.totalPages) {
-          await renderPDFPage(pageNum, DOM.pdfCanvasSingle);
-        } else if (pageNum <= state.totalPages) {
-          renderFallbackPage(pageNum);
-        } else {
-          clearCanvas(DOM.pdfCanvasSingle);
-        }
-        
-        updateNav();
-      }
+            function renderCards(data) {
+                if (data.length === 0) {
+                    const isFavoritTab = state.filterTag === 'Favorit';
+                    const message = isFavoritTab 
+                        ? 'Belum ada favorit. Klik ikon ❤️ pada kartu untuk menambahkan ke favorit.' 
+                        : 'Tidak ada layanan yang cocok. Coba hapus filter atau ganti kata kunci pencarian.';
+                    track.innerHTML = `
+                        <div style="width:100%; text-align:center; padding:3rem 0; color: var(--text-secondary);">
+                            <i class="fas fa-search" style="font-size:2rem; display:block; margin-bottom:1rem;" aria-hidden="true"></i>
+                            <p>${message}</p>
+                            ${state.filterTag !== 'Semua' || state.searchQuery ? `<button onclick="document.getElementById('resetBtn').click()" style="margin-top:1rem; padding:0.5rem 1.5rem; border-radius:50px; background:var(--accent); color:#000; border:none; cursor:pointer; font-weight:600;">Reset Filter</button>` : ''}
+                        </div>`;
+                    return;
+                }
+                let html = '';
+                data.forEach((item, index) => {
+                    const isFav = state.favorites[item.id] || false;
+                    const hitCount = state.hits[item.id] || 0;
+                    html += `
+                        <div class="card" data-id="${item.id}" data-index="${index}" role="group" aria-roledescription="slide" aria-label="Slide ${index + 1} dari ${data.length}: ${item.title}">
+                            <div class="glow-overlay" aria-hidden="true"></div>
+                            <div class="card-top">
+                                <div class="icon"><i class="fas ${item.icon}" aria-hidden="true"></i></div>
+                                <div class="card-actions-top">
+                                    <span class="hit-badge" title="Jumlah klik pada layanan ini. Data disimpan lokal di browser Anda.">
+                                        <i class="fas fa-eye" aria-hidden="true"></i> 
+                                        <span class="hit-count">${hitCount}</span>
+                                    </span>
+                                    <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${item.id}" 
+                                            aria-label="${isFav ? 'Hapus dari favorit' : 'Tambahkan ke favorit'}" 
+                                            title="${isFav ? 'Hapus dari favorit' : 'Tambahkan ke favorit'}">
+                                        <i class="fas fa-heart" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <span class="tag">${item.tag}</span>
+                            <h3>${item.title}</h3>
+                            <p class="subtitle">${item.desc}</p>
+                            <div class="link-wrapper">
+                                <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="buka-link" data-id="${item.id}"
+                                   aria-label="Buka layanan ${item.title} di tab baru">
+                                    <span>Buka</span><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                                </a>
+                                <button class="copy-btn" data-url="${item.url}" aria-label="Salin link ${item.title}" title="Salin link">
+                                    <i class="fas fa-copy" aria-hidden="true"></i>
+                                </button>
+                                <button class="share-btn" data-url="${item.url}" data-title="${item.title}" 
+                                        aria-label="Bagikan ${item.title}" title="Bagikan">
+                                    <i class="fas fa-share-nodes" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                track.innerHTML = html;
+            }
 
-      async function renderPDFPage(num, canvas) {
-        if (!state.pdfDoc || !canvas || num > state.totalPages) return;
-        
-        try {
-          var page = await state.pdfDoc.getPage(num);
-          
-          var baseScale = 2.0; // Higher base for better quality
-          var zoomScale = state.zoomLevel || 1.0;
-          var scale = baseScale * zoomScale;
-          
-          var vp = page.getViewport({ scale: scale });
-          
-          canvas.height = vp.height;
-          canvas.width = vp.width;
-          canvas.style.width = vp.width + 'px';
-          canvas.style.height = vp.height + 'px';
-          
-          var ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#fff';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          await page.render({
-            canvasContext: ctx,
-            viewport: vp,
-            background: '#fff'
-          }).promise;
-          
-        } catch (e) {
-          console.error('Render error:', e);
-          renderFallbackPage(num);
-        }
-      }
+            function renderStats() {
+                const stats = APP_DATA.map(item => ({ ...item, clicks: state.hits[item.id] || 0 }))
+                    .sort((a, b) => b.clicks - a.clicks);
+                const totalClicks = stats.reduce((s, i) => s + i.clicks, 0);
+                totalClicksDisplay.textContent = new Intl.NumberFormat('id-ID').format(totalClicks);
+                
+                if (stats.every(i => i.clicks === 0)) {
+                    statsList.innerHTML = `
+                        <div class="stats-empty">
+                            <i class="fas fa-info-circle" aria-hidden="true"></i> 
+                            Belum ada klik. Klik "Buka" pada layanan untuk mulai menghitung popularitas. 
+                            Data hanya disimpan di browser Anda.
+                        </div>`;
+                    return;
+                }
+                
+                let html = '';
+                const topThree = stats.slice(0, 3);
+                const rest = stats.slice(3);
+                
+                topThree.forEach((item, idx) => {
+                    const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : 'bronze';
+                    const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
+                    html += `
+                        <div class="stats-item">
+                            <span class="rank ${rankClass}" aria-hidden="true">${medal}</span>
+                            <span class="s-title" title="${item.title}">${item.title}</span>
+                            <span class="s-tag">${item.tag}</span>
+                            <span class="s-clicks"><i class="fas fa-eye" aria-hidden="true"></i> ${item.clicks}</span>
+                        </div>`;
+                });
+                
+                rest.forEach(item => {
+                    html += `
+                        <div class="stats-item">
+                            <span class="rank">#${stats.indexOf(item) + 1}</span>
+                            <span class="s-title" title="${item.title}">${item.title}</span>
+                            <span class="s-tag">${item.tag}</span>
+                            <span class="s-clicks"><i class="fas fa-eye" aria-hidden="true"></i> ${item.clicks}</span>
+                        </div>`;
+                });
+                statsList.innerHTML = html;
+            }
 
-      function renderFallbackPage(num) {
-        if (!DOM.pdfCanvasSingle) return;
-        var canvas = DOM.pdfCanvasSingle;
-        var ctx = canvas.getContext('2d');
-        var w = 800;
-        var h = 1000;
-        canvas.width = w; canvas.height = h;
-        canvas.style.width = w + 'px';
-        canvas.style.height = h + 'px';
-        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#333'; ctx.textAlign = 'center';
-        ctx.font = 'bold 20px Georgia'; ctx.fillText('Halaman ' + num, w/2, h/3);
-        ctx.font = '14px Georgia'; ctx.fillStyle = '#666';
-        ctx.fillText(state.currentBook ? state.currentBook.title : 'PDF B2:B', w/2, h/3+30);
-        ctx.font = 'italic 11px Georgia'; ctx.fillText('— ' + num + ' —', w/2, h-20);
-      }
+            function bindCardEvents() {
+                track.querySelectorAll('.fav-btn').forEach(btn => {
+                    btn.addEventListener('click', handleFavClick);
+                });
+                track.querySelectorAll('.buka-link').forEach(link => {
+                    link.addEventListener('click', handleBukaClick);
+                });
+                track.querySelectorAll('.copy-btn').forEach(btn => {
+                    btn.addEventListener('click', handleCopy);
+                });
+                track.querySelectorAll('.share-btn').forEach(btn => {
+                    btn.addEventListener('click', handleShare);
+                });
+            }
 
-      // ============ ZOOM FUNCTIONS ============
-      function updateZoom(newZoom, animate) {
-        if (animate === undefined) animate = true;
-        
-        state.zoomLevel = Math.max(state.zoomMin, Math.min(state.zoomMax, newZoom));
-        
-        applyViewTransform();
-        
-        if (DOM.zoomLevel) {
-          DOM.zoomLevel.textContent = Math.round(state.zoomLevel * 100) + '%';
-        }
-        
-        if (state.currentBook && state.pdfDoc) {
-          renderSinglePage(state.currentPage);
-        }
-        
-        try {
-          localStorage.setItem('pdf-zoom-level', state.zoomLevel);
-        } catch(e) {}
-      }
+            function handleFavClick(e) {
+                e.stopPropagation();
+                const id = this.dataset.id;
+                const wasFav = state.favorites[id];
+                // Optimistic UI update
+                state.favorites[id] = !state.favorites[id];
+                this.classList.toggle('active', state.favorites[id]);
+                this.querySelector('i').className = state.favorites[id] ? 'fas fa-heart' : 'far fa-heart';
+                this.setAttribute('aria-label', state.favorites[id] ? 'Hapus dari favorit' : 'Tambahkan ke favorit');
+                
+                // Vibrate jika tersedia
+                if (navigator.vibrate) {
+                    navigator.vibrate(state.favorites[id] ? [10, 30, 10] : 10);
+                }
+                
+                showToast(state.favorites[id] ? 'Ditambahkan ke favorit ❤️' : 'Dihapus dari favorit', 'success');
+                
+                // Update count di tab
+                updateFavCount();
+                saveState();
+            }
 
-      function zoomIn() {
-        updateZoom(state.zoomLevel + state.zoomStep);
-        showFloatingIndicator('🔍 ' + Math.round(state.zoomLevel * 100) + '%');
-      }
+            function updateFavCount() {
+                const favBtn = tabsContainer.querySelector('[data-tag="Favorit"]');
+                if (favBtn) {
+                    const count = Object.values(state.favorites).filter(v => v === true).length;
+                    const countEl = favBtn.querySelector('.count');
+                    if (countEl) countEl.textContent = count;
+                }
+            }
 
-      function zoomOut() {
-        updateZoom(state.zoomLevel - state.zoomStep);
-        showFloatingIndicator('🔍 ' + Math.round(state.zoomLevel * 100) + '%');
-      }
+            function handleBukaClick(e) {
+                const id = this.dataset.id;
+                if (id) {
+                    // Cooldown 2 detik untuk mencegah spam
+                    const now = Date.now();
+                    if (hitCooldowns[id] && now - hitCooldowns[id] < 2000) {
+                        return;
+                    }
+                    hitCooldowns[id] = now;
+                    
+                    state.hits[id] = (state.hits[id] || 0) + 1;
+                    const card = this.closest('.card');
+                    if (card) {
+                        const badge = card.querySelector('.hit-badge .hit-count');
+                        if (badge) badge.textContent = state.hits[id];
+                    }
+                    renderStats();
+                    saveState();
+                }
+            }
 
-      function zoomReset() {
-        resetViewPosition();
-        updateZoom(1.0);
-        fitToScreen();
-        showFloatingIndicator('↺ Zoom Reset');
-      }
+            function handleCopy(e) {
+                e.stopPropagation();
+                const url = this.dataset.url;
+                const btn = this;
+                if (url) {
+                    const copyPromise = navigator.clipboard && navigator.clipboard.writeText 
+                        ? navigator.clipboard.writeText(url) 
+                        : fallbackCopyPromise(url);
+                    
+                    copyPromise.then(() => {
+                        // Feedback visual
+                        const icon = btn.querySelector('i');
+                        const originalClass = icon.className;
+                        icon.className = 'fas fa-check';
+                        btn.classList.add('copied');
+                        btn.setAttribute('aria-label', 'Link berhasil disalin');
+                        
+                        if (navigator.vibrate) navigator.vibrate(15);
+                        showToast('Link berhasil disalin! 📋', 'success');
+                        
+                        setTimeout(() => {
+                            icon.className = originalClass;
+                            btn.classList.remove('copied');
+                            btn.setAttribute('aria-label', 'Salin link');
+                        }, 2000);
+                    }).catch(() => {
+                        showToast('Gagal menyalin link', 'error');
+                    });
+                }
+            }
 
-      function fitToScreen() {
-        if (!DOM.pdfViewerWrapper || !DOM.pdfCanvasSingle) return;
-        
-        var wrapperW = DOM.pdfViewerWrapper.clientWidth;
-        var wrapperH = DOM.pdfViewerWrapper.clientHeight;
-        var canvasW = DOM.pdfCanvasSingle.width || 800;
-        var canvasH = DOM.pdfCanvasSingle.height || 1000;
-        
-        if (canvasW > 0 && canvasH > 0) {
-          var padding = 40;
-          var fitW = (wrapperW - padding) / (canvasW / state.zoomLevel);
-          var fitH = (wrapperH - padding) / (canvasH / state.zoomLevel);
-          var fitZoom = Math.min(fitW, fitH, state.zoomMax);
-          
-          resetViewPosition();
-          updateZoom(fitZoom);
-        }
-        
-        showFloatingIndicator('⊡ Fit to Screen');
-      }
-      
-      function showFloatingIndicator(text) {
-        if (DOM.pageFloatingIndicator) {
-          DOM.pageFloatingIndicator.textContent = text;
-          DOM.pageFloatingIndicator.classList.add('visible');
-          clearTimeout(state._fiTimer);
-          state._fiTimer = setTimeout(function() {
-            DOM.pageFloatingIndicator.classList.remove('visible');
-          }, 1500);
-        }
-      }
+            function fallbackCopyPromise(url) {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const ta = document.createElement('textarea');
+                        ta.value = url;
+                        ta.style.position = 'fixed';
+                        ta.style.opacity = '0';
+                        ta.style.left = '-9999px';
+                        ta.setAttribute('aria-hidden', 'true');
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        resolve();
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            }
 
-      // ============ FULLSCREEN ============
-      function toggleFullscreen() {
-        var elem = document.querySelector('.book-area');
-        
-        if (!document.fullscreenElement && 
-            !document.webkitFullscreenElement && 
-            !document.mozFullScreenElement && 
-            !document.msFullscreenElement) {
-          if (elem.requestFullscreen) {
-            elem.requestFullscreen();
-          } else if (elem.webkitRequestFullscreen) {
-            elem.webkitRequestFullscreen();
-          } else if (elem.mozRequestFullScreen) {
-            elem.mozRequestFullScreen();
-          } else if (elem.msRequestFullscreen) {
-            elem.msRequestFullscreen();
-          }
-          toast('📺 Fullscreen', 'success', 1500);
-        } else {
-          if (document.exitFullscreen) {
-            document.exitFullscreen();
-          } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-          } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen();
-          } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
-          }
-        }
-      }
+            function handleShare(e) {
+                e.stopPropagation();
+                const url = this.dataset.url;
+                const title = this.dataset.title;
+                
+                if (navigator.share) {
+                    navigator.share({
+                        title: title,
+                        url: url
+                    }).catch(() => {});
+                } else {
+                    // Fallback: copy link
+                    const copyBtn = this.closest('.card').querySelector('.copy-btn');
+                    if (copyBtn) copyBtn.click();
+                }
+            }
 
-      function updateFullscreenButton() {
-        var isFullscreen = !!(document.fullscreenElement || 
-                               document.webkitFullscreenElement || 
-                               document.mozFullScreenElement || 
-                               document.msFullscreenElement);
-        
-        if (DOM.btnFullscreen) {
-          DOM.btnFullscreen.innerHTML = isFullscreen ? '⛶' : '⛶';
-          DOM.btnFullscreen.title = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
-        }
-      }
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // CAROUSEL / GRID LOGIC
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      // ============ DOWNLOAD PDF ============
-      function downloadPDF() {
-        if (!state.currentBook) {
-          toast('❌ Tidak ada buku yang dibuka', 'error');
-          return;
-        }
-        
-        var fileId = state.currentBook.fileId;
-        
-        if (state.pdfBase64) {
-          triggerDownload(state.pdfBase64, state.currentBook.title);
-          toast('💾 Download PDF', 'success', 2000);
-          return;
-        }
-        
-        var cached = getCachedPDF(fileId);
-        if (cached && cached.base64) {
-          triggerDownload(cached.base64, state.currentBook.title);
-          toast('💾 Download dari cache', 'success', 2000);
-          return;
-        }
-        
-        toast('📥 Mendownload PDF...', 'info', 3000);
-        
-        fetch(WEBAPP_URL + '?action=getFullPDF&fileId=' + fileId)
-          .then(function(res) { return res.json(); })
-          .then(function(data) {
-            if (data.success && data.base64) {
-              triggerDownload(data.base64, state.currentBook.title);
-              toast('✅ Download selesai!', 'success', 2000);
+            function getCardsPerView() {
+                if (state.viewMode === 'grid') return 999;
+                if (window.innerWidth <= 768) return 1;
+                if (window.innerWidth <= 1100) return 2;
+                return 3;
+            }
+
+            function updateCarousel(animate = true) {
+                if (state.viewMode === 'grid') return;
+                const cards = track.querySelectorAll('.card');
+                const totalSlides = cards.length;
+                if (totalSlides === 0) return;
+                const cardsPerView = getCardsPerView();
+                const cardWidth = (cards[0]?.offsetWidth || 300) + 32; // 32 = gap
+                const maxIndex = Math.max(0, totalSlides - cardsPerView);
+                if (state.currentIndex > maxIndex) state.currentIndex = maxIndex;
+                if (state.currentIndex < 0) state.currentIndex = 0;
+                const offset = state.currentIndex * cardWidth;
+                track.style.transition = animate ? 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)' : 'none';
+                track.style.transform = `translate3d(-${offset}px, 0, 0)`;
+                updateDotsAndCounter(totalSlides);
+                updateButtons(totalSlides);
+            }
+
+            function updateDotsAndCounter(totalSlides) {
+                if (state.viewMode === 'grid') return;
+                const cardsPerView = getCardsPerView();
+                const maxIndex = Math.max(0, totalSlides - cardsPerView);
+                const totalDots = Math.min(totalSlides, maxIndex + 1);
+                let dotsHtml = '';
+                for (let i = 0; i < totalDots; i++) {
+                    const active = i === state.currentIndex ? 'active' : '';
+                    dotsHtml += `<button class="dot ${active}" data-index="${i}" role="tab" aria-selected="${i === state.currentIndex}" aria-label="Slide ${i + 1} dari ${totalDots}"></button>`;
+                }
+                dotsContainer.innerHTML = dotsHtml;
+                dotsContainer.querySelectorAll('.dot').forEach(dot => {
+                    dot.addEventListener('click', function() { 
+                        goToSlide(parseInt(this.dataset.index)); 
+                    });
+                });
+                counter.textContent = `${totalSlides > 0 ? state.currentIndex + 1 : 0} / ${totalSlides}`;
+            }
+
+            function updateButtons(totalSlides) {
+                if (state.viewMode === 'grid') return;
+                const cardsPerView = getCardsPerView();
+                const maxIndex = Math.max(0, totalSlides - cardsPerView);
+                prevBtn.disabled = state.currentIndex === 0 || totalSlides === 0;
+                nextBtn.disabled = state.currentIndex >= maxIndex || totalSlides === 0;
+                prevBtn.style.opacity = prevBtn.disabled ? '0.2' : '1';
+                nextBtn.style.opacity = nextBtn.disabled ? '0.2' : '1';
+            }
+
+            function goToSlide(index, animate = true) {
+                if (state.viewMode === 'grid') return;
+                const cards = track.querySelectorAll('.card');
+                const totalSlides = cards.length;
+                if (totalSlides === 0) return;
+                const cardsPerView = getCardsPerView();
+                const maxIndex = Math.max(0, totalSlides - cardsPerView);
+                const target = Math.min(Math.max(index, 0), maxIndex);
+                if (target !== state.currentIndex) {
+                    state.currentIndex = target;
+                    updateCarousel(animate);
+                } else { 
+                    updateCarousel(animate); 
+                }
+                if (state.viewMode === 'carousel') resetProgress();
+            }
+
+            function nextSlide() {
+                if (state.viewMode === 'grid' || isAutoPlayPaused) return;
+                const cards = track.querySelectorAll('.card');
+                const totalSlides = cards.length;
+                const cardsPerView = getCardsPerView();
+                const maxIndex = Math.max(0, totalSlides - cardsPerView);
+                if (state.currentIndex < maxIndex) goToSlide(state.currentIndex + 1);
+                else goToSlide(0);
+            }
+
+            function prevSlide() {
+                if (state.viewMode === 'grid') return;
+                if (state.currentIndex > 0) goToSlide(state.currentIndex - 1);
+                else {
+                    const cards = track.querySelectorAll('.card');
+                    const totalSlides = cards.length;
+                    const cardsPerView = getCardsPerView();
+                    const maxIndex = Math.max(0, totalSlides - cardsPerView);
+                    goToSlide(maxIndex);
+                }
+            }
+
+            function updateViewMode() {
+                wrapper.classList.toggle('grid-mode', state.viewMode === 'grid');
+                const icon = viewToggle.querySelector('i');
+                icon.className = state.viewMode === 'grid' ? 'fas fa-th-list' : 'fas fa-th';
+                viewToggle.classList.toggle('active-mode', state.viewMode === 'grid');
+                viewToggle.setAttribute('aria-label', state.viewMode === 'grid' ? 'Ganti ke mode carousel' : 'Ganti ke mode grid');
+                
+                if (state.viewMode === 'carousel') {
+                    progressBar.classList.remove('hidden');
+                    pauseBtn.style.display = 'flex';
+                    setTimeout(() => { 
+                        updateCarousel(false);
+                        if (!isAutoPlayPaused) startAutoPlay();
+                    }, 50);
+                } else {
+                    progressBar.classList.add('hidden');
+                    pauseBtn.style.display = 'none';
+                    stopAutoPlay();
+                    track.style.transform = 'none';
+                }
+            }
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // AUTO PLAY & PROGRESS
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            function startAutoPlay() {
+                if (state.viewMode === 'grid' || isAutoPlayPaused) return;
+                stopAutoPlay();
+                startProgress();
+                autoPlayInterval = setInterval(() => {
+                    nextSlide();
+                    stopProgress();
+                    progressValue = 100;
+                    progressBar.style.width = '100%';
+                    startProgress();
+                }, AUTO_PLAY_DELAY);
+            }
+
+            function stopAutoPlay() { 
+                if (autoPlayInterval) { 
+                    clearInterval(autoPlayInterval);
+                    autoPlayInterval = null; 
+                } 
+                stopProgress(); 
+            }
+
+            function toggleAutoPlay() {
+                isAutoPlayPaused = !isAutoPlayPaused;
+                state.autoplayPaused = isAutoPlayPaused;
+                
+                if (isAutoPlayPaused) {
+                    stopAutoPlay();
+                    pauseBtn.classList.add('paused');
+                    pauseBtn.querySelector('i').className = 'fas fa-play';
+                    pauseBtn.setAttribute('aria-label', 'Lanjutkan putar otomatis');
+                    showToast('Putar otomatis dijeda ⏸️', 'info');
+                } else {
+                    pauseBtn.classList.remove('paused');
+                    pauseBtn.querySelector('i').className = 'fas fa-pause';
+                    pauseBtn.setAttribute('aria-label', 'Jeda putar otomatis');
+                    startAutoPlay();
+                    showToast('Putar otomatis dilanjutkan ▶️', 'info');
+                }
+                saveState();
+            }
+
+            function startProgress() {
+                if (state.viewMode === 'grid' || isAutoPlayPaused) return;
+                stopProgress();
+                progressValue = 100;
+                progressBar.style.width = '100%';
+                progressInterval = setInterval(() => {
+                    progressValue -= (PROGRESS_STEP / AUTO_PLAY_DELAY) * 100;
+                    if (progressValue <= 0) { 
+                        progressValue = 0;
+                        progressBar.style.width = '0%'; 
+                    } else { 
+                        progressBar.style.width = progressValue + '%'; 
+                    }
+                }, PROGRESS_STEP);
+            }
+
+            function stopProgress() { 
+                if (progressInterval) { 
+                    clearInterval(progressInterval);
+                    progressInterval = null; 
+                } 
+            }
+
+            function resetProgress() { 
+                if (state.viewMode === 'grid' || isAutoPlayPaused) return;
+                stopProgress();
+                progressValue = 100;
+                progressBar.style.width = '100%';
+                startProgress(); 
+            }
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // THEME
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            function toggleTheme() {
+                if (state.theme === 'dark') {
+                    state.theme = 'light';
+                } else if (state.theme === 'light') {
+                    state.theme = 'ultra-dark';
+                } else {
+                    state.theme = 'dark';
+                }
+                applyTheme();
+                setStorage(STORAGE_KEYS.THEME, state.theme);
+                showToast(`Tema: ${state.theme === 'dark' ? 'Gelap 🌙' : state.theme === 'light' ? 'Terang ☀️' : 'Ultra Gelap 🌑'}`, 'info');
+            }
+
+            function applyTheme() {
+                document.documentElement.setAttribute('data-theme', state.theme);
+                const icon = themeToggle.querySelector('i');
+                if (state.theme === 'dark') icon.className = 'fas fa-moon';
+                else if (state.theme === 'light') icon.className = 'fas fa-sun';
+                else icon.className = 'fas fa-moon';
+                themeToggle.setAttribute('aria-label', `Tema saat ini: ${state.theme}. Klik untuk ganti.`);
+            }
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // TOAST, RESET & SYNC
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            let toastTimeout = null;
+
+            function showToast(msg, type = 'info') {
+                const icons = {
+                    'success': 'fa-check-circle',
+                    'error': 'fa-exclamation-circle',
+                    'info': 'fa-info-circle'
+                };
+                toastMsg.textContent = msg;
+                toastIcon.className = 'fas ' + (icons[type] || icons.info);
+                toastEl.className = 'toast ' + type;
+                toastEl.classList.add('show');
+                
+                if (toastTimeout) clearTimeout(toastTimeout);
+                const duration = type === 'error' ? 4000 : 2500;
+                toastTimeout = setTimeout(() => toastEl.classList.remove('show'), duration);
+            }
+
+            function showSyncBadge() {
+                syncBadge.classList.add('show');
+                if (syncBadgeTimeout) clearTimeout(syncBadgeTimeout);
+                syncBadgeTimeout = setTimeout(() => {
+                    syncBadge.classList.remove('show');
+                }, 3000);
+            }
+
+            async function resetAll() {
+                const confirmed = await showConfirm(
+                    'Reset Semua Filter',
+                    'Ini akan menghapus filter, pencarian, dan mengembalikan tampilan ke awal. Lanjutkan?'
+                );
+                if (!confirmed) return;
+                
+                state.filterTag = 'Semua';
+                state.searchQuery = '';
+                searchInput.value = '';
+                clearSearchBtn.classList.remove('visible');
+                state.currentIndex = 0;
+                render();
+                if (state.viewMode === 'carousel') {
+                    setTimeout(() => { 
+                        updateCarousel(false);
+                        if (!isAutoPlayPaused) startAutoPlay(); 
+                    }, 50);
+                }
+                showToast('Filter & pencarian direset ✅', 'success');
+            }
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // EASTER EGG
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            let titleClickCount = 0;
+            let titleClickTimeout = null;
+            $('#mainTitle').addEventListener('click', () => {
+                titleClickCount++;
+                if (titleClickTimeout) clearTimeout(titleClickTimeout);
+                titleClickTimeout = setTimeout(() => { titleClickCount = 0; }, 2000);
+                
+                if (titleClickCount >= 5) {
+                    titleClickCount = 0;
+                    // Confetti sederhana
+                    showToast('🎉 Easter egg ditemukan! 🎉', 'success');
+                    createConfetti();
+                }
+            });
+
+            function createConfetti() {
+                const colors = ['#ffd700', '#ff6b6b', '#00c6ff', '#00ff88', '#f7971e', '#6a11cb'];
+                for (let i = 0; i < 50; i++) {
+                    setTimeout(() => {
+                        const confetti = document.createElement('div');
+                        confetti.style.cssText = `
+                            position: fixed;
+                            top: -10px;
+                            left: ${Math.random() * 100}%;
+                            width: 10px;
+                            height: 10px;
+                            background: ${colors[Math.floor(Math.random() * colors.length)]};
+                            z-index: 9999;
+                            pointer-events: none;
+                            border-radius: ${Math.random() > 0.5 ? '50%' : '0'};
+                            animation: confettiFall ${1 + Math.random() * 2}s ease-in forwards;
+                        `;
+                        document.body.appendChild(confetti);
+                        setTimeout(() => confetti.remove(), 3000);
+                    }, i * 30);
+                }
+            }
+
+            // Add confetti animation style
+            const confettiStyle = document.createElement('style');
+            confettiStyle.textContent = `
+                @keyframes confettiFall {
+                    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+                    100% { transform: translateY(100vh) rotate(${360 + Math.random() * 720}deg); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(confettiStyle);
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // EVENT BINDING
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            prevBtn.addEventListener('click', () => { 
+                prevSlide(); 
+                if (state.viewMode === 'carousel') resetProgress(); 
+            });
+            nextBtn.addEventListener('click', () => { 
+                nextSlide(); 
+                if (state.viewMode === 'carousel') resetProgress(); 
+            });
+            
+            searchInput.addEventListener('input', function() {
+                state.searchQuery = this.value;
+                state.currentIndex = 0;
+                clearSearchBtn.classList.toggle('visible', this.value.length > 0);
+                render();
+                if (state.viewMode === 'carousel') resetProgress();
+            });
+            
+            clearSearchBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                state.searchQuery = '';
+                state.currentIndex = 0;
+                clearSearchBtn.classList.remove('visible');
+                render();
+                if (state.viewMode === 'carousel') resetProgress();
+                searchInput.focus();
+            });
+            
+            themeToggle.addEventListener('click', toggleTheme);
+            
+            viewToggle.addEventListener('click', function() {
+                state.viewMode = state.viewMode === 'carousel' ? 'grid' : 'carousel';
+                updateViewMode();
+                render();
+                if (state.viewMode === 'carousel') {
+                    setTimeout(() => { 
+                        updateCarousel(false);
+                        if (!isAutoPlayPaused) startAutoPlay(); 
+                    }, 100);
+                }
+                showToast(state.viewMode === 'grid' ? 'Mode Grid aktif 📱' : 'Mode Carousel aktif 🎠', 'info');
+            });
+            
+            pauseBtn.addEventListener('click', toggleAutoPlay);
+            resetBtn.addEventListener('click', resetAll);
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Don't trigger shortcuts when typing in input
+                if (e.target.tagName === 'INPUT' && e.key !== 'Escape') return;
+                
+                if (e.key === 'ArrowRight' && state.viewMode === 'carousel') { 
+                    e.preventDefault();
+                    nextSlide(); 
+                    resetProgress(); 
+                }
+                if (e.key === 'ArrowLeft' && state.viewMode === 'carousel') { 
+                    e.preventDefault();
+                    prevSlide(); 
+                    resetProgress(); 
+                }
+                if (e.key === 'f' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    searchInput.focus();
+                }
+                if (e.key === 'g' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    viewToggle.click();
+                }
+                if (e.key === 't' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    toggleTheme();
+                }
+                if (e.key === ' ' && state.viewMode === 'carousel') {
+                    e.preventDefault();
+                    toggleAutoPlay();
+                }
+                if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    showToast('Shortcut: ← → navigasi, F=cari, G=mode, T=tema, Spasi=pause, Ctrl+R=reset, ?=bantuan', 'info');
+                }
+                if (e.key === 'r' && e.ctrlKey) {
+                    e.preventDefault();
+                    resetAll();
+                }
+            });
+
+            // Pause on hover
+            wrapper.addEventListener('mouseenter', () => { 
+                if (state.viewMode === 'carousel' && !isAutoPlayPaused) { 
+                    stopAutoPlay(); 
+                    stopProgress(); 
+                } 
+            });
+            wrapper.addEventListener('mouseleave', () => { 
+                if (state.viewMode === 'carousel' && !isAutoPlayPaused) { 
+                    startAutoPlay(); 
+                } 
+            });
+
+            // Touch swipe dengan momentum
+            let touchStart = 0,
+                touchEnd = 0,
+                touchStartTime = 0,
+                isSwiping = false;
+            wrapper.addEventListener('touchstart', (e) => { 
+                touchStart = e.changedTouches[0].screenX; 
+                touchStartTime = Date.now();
+                isSwiping = true; 
+            }, { passive: true });
+            wrapper.addEventListener('touchmove', (e) => { 
+                if (!isSwiping) return;
+                touchEnd = e.changedTouches[0].screenX; 
+            }, { passive: true });
+            wrapper.addEventListener('touchend', (e) => {
+                if (!isSwiping || state.viewMode === 'grid') return;
+                isSwiping = false;
+                const diff = touchStart - touchEnd;
+                const duration = Date.now() - touchStartTime;
+                const velocity = Math.abs(diff) / duration;
+                
+                // Swipe dengan kecepatan > 0.3 atau jarak > 50px
+                if (Math.abs(diff) > 50 || velocity > 0.3) {
+                    if (diff > 0) { 
+                        nextSlide(); 
+                        resetProgress(); 
+                    } else { 
+                        prevSlide(); 
+                        resetProgress(); 
+                    }
+                }
+                touchStart = 0;
+                touchEnd = 0;
+            }, { passive: true });
+
+            // Reload data saat halaman difokuskan kembali
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    reloadData();
+                }
+            });
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // PARTIKEL CANVAS (OPTIMIZED)
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            const canvas = document.getElementById('particle-canvas');
+            const ctx = canvas.getContext('2d');
+            let w, h, particles = [];
+            let animationId = null;
+
+            function resizeParticles() { 
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight; 
+            }
+            window.addEventListener('resize', resizeParticles);
+            resizeParticles();
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * w;
+                    this.y = Math.random() * h;
+                    this.size = Math.random() * 2 + 0.5;
+                    this.speedX = (Math.random() - 0.5) * 0.3;
+                    this.speedY = (Math.random() - 0.5) * 0.3;
+                    this.opacity = Math.random() * 0.4 + 0.05;
+                }
+                update() { 
+                    this.x += this.speedX;
+                    this.y += this.speedY; 
+                    if (this.x < 0 || this.x > w) this.speedX *= -1; 
+                    if (this.y < 0 || this.y > h) this.speedY *= -1; 
+                }
+                draw() { 
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 215, 0, ${this.opacity})`;
+                    ctx.fill(); 
+                }
+            }
+
+            function initParticles(count = 60) { 
+                particles = []; 
+                for (let i = 0; i < count; i++) particles.push(new Particle()); 
+            }
+            initParticles();
+
+            function animateParticles() { 
+                if (document.hidden) {
+                    animationId = requestAnimationFrame(animateParticles);
+                    return;
+                }
+                ctx.clearRect(0, 0, w, h);
+                particles.forEach(p => { p.update(); p.draw(); });
+                animationId = requestAnimationFrame(animateParticles); 
+            }
+            animateParticles();
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // INIT
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            async function init() {
+                loadState();
+                applyTheme();
+                
+                // Set initial autoplay state
+                isAutoPlayPaused = state.autoplayPaused;
+
+                // Load data from API
+                await loadDataFromAPI();
+
+                // Set view mode after data loaded
+                render();
+
+                if (state.viewMode === 'carousel') {
+                    setTimeout(() => {
+                        updateCarousel(false);
+                        if (!isAutoPlayPaused) startAutoPlay();
+                    }, 100);
+                }
+
+                // Show sync badge briefly
+                setTimeout(() => {
+                    syncBadge.classList.add('show');
+                    setTimeout(() => syncBadge.classList.remove('show'), 2000);
+                }, 500);
+
+                // Update clear search button visibility
+                clearSearchBtn.classList.toggle('visible', searchInput.value.length > 0);
+
+                console.log('📱 SIM Upload v4.0 - Advanced Features');
+                console.log('🔗 GAS URL:', GAS_URL);
+                console.log('📊 Total layanan:', APP_DATA.length);
+                console.log('⌨️ Tekan ? untuk melihat shortcut keyboard');
+                console.log('🎨 Klik judul 5x untuk easter egg');
+            }
+
+            if (document.readyState === 'complete') {
+                init();
             } else {
-              throw new Error('Gagal download');
+                window.addEventListener('load', init);
             }
-          })
-          .catch(function(err) {
-            toast('❌ Gagal download PDF', 'error', 3000);
-          });
-      }
 
-      function triggerDownload(base64, filename) {
-        var byteChars = atob(base64);
-        var byteNums = new Array(byteChars.length);
-        for (var i = 0; i < byteChars.length; i++) {
-          byteNums[i] = byteChars.charCodeAt(i);
-        }
-        var byteArr = new Uint8Array(byteNums);
-        var blob = new Blob([byteArr], { type: 'application/pdf' });
-        
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = (filename || 'document') + '.pdf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        console.log('💾 Downloaded:', filename);
-      }
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                if (state.viewMode === 'carousel') {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => { 
+                        updateCarousel(false);
+                        resetProgress(); 
+                    }, 200);
+                }
+            });
 
-      // ============ NAVIGATION ============
-      async function flipNext() {
-        if (state.isFlipping || state.currentPage >= state.totalPages) return;
-        state.isFlipping = true;
-        state.currentPage++;
-        await renderSinglePage(state.currentPage);
-        state.isFlipping = false;
-        updateNav();
-        showFloatingIndicator('Halaman ' + state.currentPage + ' →');
-      }
+        })();
+    </script>
 
-      async function flipPrev() {
-        if (state.isFlipping || state.currentPage <= 1) return;
-        state.isFlipping = true;
-        state.currentPage--;
-        await renderSinglePage(state.currentPage);
-        state.isFlipping = false;
-        updateNav();
-        showFloatingIndicator('← Halaman ' + state.currentPage);
-      }
-
-      function goBack() {
-        if (DOM.readerView) DOM.readerView.classList.remove('active');
-        state.pdfDoc = null; state.currentBook = null;
-        state.pdfBase64 = null;
-        resetViewPosition();
-      }
-
-      function loadZoomPreference() {
-        try {
-          var saved = localStorage.getItem('pdf-zoom-level');
-          if (saved) {
-            state.zoomLevel = parseFloat(saved) || 1.0;
-          }
-        } catch(e) {}
-      }
-
-      // ============ DRAG TO PAN - THE JOS ============
-      function setupDragToPan() {
-        if (!DOM.pdfViewerWrapper) return;
-        
-        var wrapper = DOM.pdfViewerWrapper;
-        
-        // Mouse events
-        wrapper.addEventListener('mousedown', function(e) {
-          if (e.button !== 0) return; // Only left click
-          
-          state.isDragging = true;
-          state.hasMoved = false;
-          state.dragStartX = e.clientX - state.translateX;
-          state.dragStartY = e.clientY - state.translateY;
-          
-          wrapper.classList.add('grabbing');
-          if (DOM.pdfCanvasContainer) {
-            DOM.pdfCanvasContainer.classList.add('no-transition');
-          }
-          
-          e.preventDefault();
-        });
-        
-        window.addEventListener('mousemove', function(e) {
-          if (!state.isDragging) return;
-          
-          var dx = e.clientX - state.dragStartX;
-          var dy = e.clientY - state.dragStartY;
-          
-          if (Math.abs(dx - state.translateX) > 2 || Math.abs(dy - state.translateY) > 2) {
-            state.hasMoved = true;
-          }
-          
-          state.translateX = dx;
-          state.translateY = dy;
-          applyViewTransform();
-        });
-        
-        window.addEventListener('mouseup', function(e) {
-          if (!state.isDragging) return;
-          
-          state.isDragging = false;
-          wrapper.classList.remove('grabbing');
-          
-          if (DOM.pdfCanvasContainer) {
-            DOM.pdfCanvasContainer.classList.remove('no-transition');
-          }
-        });
-        
-        // Touch events for mobile
-        wrapper.addEventListener('touchstart', function(e) {
-          if (e.touches.length === 1) {
-            state.isDragging = true;
-            state.hasMoved = false;
-            state.dragStartX = e.touches[0].clientX - state.translateX;
-            state.dragStartY = e.touches[0].clientY - state.translateY;
-            
-            if (DOM.pdfCanvasContainer) {
-              DOM.pdfCanvasContainer.classList.add('no-transition');
-            }
-          }
-        }, { passive: false });
-        
-        wrapper.addEventListener('touchmove', function(e) {
-          if (!state.isDragging || e.touches.length !== 1) return;
-          
-          var dx = e.touches[0].clientX - state.dragStartX;
-          var dy = e.touches[0].clientY - state.dragStartY;
-          
-          if (Math.abs(dx - state.translateX) > 2 || Math.abs(dy - state.translateY) > 2) {
-            state.hasMoved = true;
-          }
-          
-          state.translateX = dx;
-          state.translateY = dy;
-          applyViewTransform();
-        });
-        
-        wrapper.addEventListener('touchend', function(e) {
-          state.isDragging = false;
-          
-          if (DOM.pdfCanvasContainer) {
-            DOM.pdfCanvasContainer.classList.remove('no-transition');
-          }
-        });
-        
-        // Click event for page navigation (only if not dragged)
-        wrapper.addEventListener('click', function(e) {
-          if (state.hasMoved) {
-            state.hasMoved = false;
-            return;
-          }
-          
-          if (!state.currentBook || state.isFlipping) return;
-          
-          var rect = wrapper.getBoundingClientRect();
-          var x = e.clientX - rect.left;
-          
-          if (x < rect.width * 0.3) {
-            flipPrev();
-          } else if (x > rect.width * 0.7) {
-            flipNext();
-          }
-        });
-      }
-
-      // ============ EVENTS ============
-      function safeOn(el, ev, fn) { if (el) el.addEventListener(ev, fn); }
-
-      initDOM();
-      loadZoomPreference();
-      setupDragToPan();
-      
-      safeOn(DOM.btnPrev, 'click', function(e) { e.stopPropagation(); flipPrev(); });
-      safeOn(DOM.btnNext, 'click', function(e) { e.stopPropagation(); flipNext(); });
-      safeOn(DOM.btnBack, 'click', goBack);
-      safeOn(DOM.btnZoomIn, 'click', function(e) { e.stopPropagation(); zoomIn(); });
-      safeOn(DOM.btnZoomOut, 'click', function(e) { e.stopPropagation(); zoomOut(); });
-      safeOn(DOM.btnZoomReset, 'click', function(e) { e.stopPropagation(); zoomReset(); });
-      safeOn(DOM.btnZoomFit, 'click', function(e) { e.stopPropagation(); fitToScreen(); });
-      safeOn(DOM.btnFullscreen, 'click', function(e) { e.stopPropagation(); toggleFullscreen(); });
-      safeOn(DOM.btnDownload, 'click', function(e) { e.stopPropagation(); downloadPDF(); });
-      
-      safeOn(DOM.retryBtn, 'click', function() {
-        if (state.currentBook) openBook(state.currentBook.fileId, state.currentBook.title, state.currentBook.url);
-      });
-      
-      safeOn(DOM.refreshBtn, 'click', function() { fetchBooks(false); });
-
-      document.addEventListener('keydown', function(e) {
-        if (!state.currentBook || state.isFlipping) return;
-        
-        if (e.key === 'ArrowRight' || e.key === 'PageDown') { 
-          e.preventDefault(); flipNext(); 
-        }
-        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { 
-          e.preventDefault(); flipPrev(); 
-        }
-        else if (e.key === 'Escape') { 
-          goBack(); 
-        }
-        else if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
-          e.preventDefault(); zoomIn();
-        }
-        else if ((e.ctrlKey || e.metaKey) && e.key === '-') {
-          e.preventDefault(); zoomOut();
-        }
-        else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-          e.preventDefault(); zoomReset();
-        }
-        else if (e.key === 'f' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-          e.preventDefault(); toggleFullscreen();
-        }
-      });
-
-      // Zoom with mouse wheel
-      if (DOM.pdfViewerWrapper) {
-        DOM.pdfViewerWrapper.addEventListener('wheel', function(e) {
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            if (e.deltaY < 0) {
-              zoomIn();
-            } else {
-              zoomOut();
-            }
-          }
-        }, { passive: false });
-      }
-
-      // Pinch zoom for mobile
-      if (DOM.pdfViewerWrapper) {
-        var initialDistance = 0;
-        var initialZoom = 1;
-        
-        DOM.pdfViewerWrapper.addEventListener('touchstart', function(e) {
-          if (e.touches.length === 2) {
-            initialDistance = Math.hypot(
-              e.touches[0].clientX - e.touches[1].clientX,
-              e.touches[0].clientY - e.touches[1].clientY
-            );
-            initialZoom = state.zoomLevel;
-            state.isDragging = false;
-          }
-        });
-        
-        DOM.pdfViewerWrapper.addEventListener('touchmove', function(e) {
-          if (e.touches.length === 2) {
-            e.preventDefault();
-            var currentDistance = Math.hypot(
-              e.touches[0].clientX - e.touches[1].clientX,
-              e.touches[0].clientY - e.touches[1].clientY
-            );
-            var scale = currentDistance / initialDistance;
-            var newZoom = initialZoom * scale;
-            updateZoom(newZoom, false);
-          }
-        }, { passive: false });
-      }
-
-      // Double tap untuk zoom
-      if (DOM.pdfViewerWrapper) {
-        DOM.pdfViewerWrapper.addEventListener('dblclick', function(e) {
-          if (state.zoomLevel !== 1.0) {
-            zoomReset();
-          } else {
-            updateZoom(2.0);
-          }
-        });
-      }
-
-      document.addEventListener('fullscreenchange', updateFullscreenButton);
-      document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
-      document.addEventListener('mozfullscreenchange', updateFullscreenButton);
-      document.addEventListener('MSFullscreenChange', updateFullscreenButton);
-
-      window.addEventListener('resize', function() {
-        clearTimeout(state._rt);
-        state._rt = setTimeout(function() {
-          if (state.currentBook && state.pdfDoc) {
-            renderSinglePage(state.currentPage);
-          }
-        }, 300);
-      });
-
-      window.addEventListener('online', function() { setSyncStatus('', 'Live'); fetchBooks(true); });
-      window.addEventListener('offline', function() { setSyncStatus('offline', 'Offline'); });
-
-      if ('serviceWorker' in navigator) {
-        var swCode = 'self.addEventListener("install",function(e){e.waitUntil(self.skipWaiting())});self.addEventListener("activate",function(e){e.waitUntil(self.clients.claim())});self.addEventListener("fetch",function(e){e.respondWith(fetch(e.request).then(function(r){var c=r.clone();caches.open("dl-v20").then(function(ca){ca.put(e.request,c)});return r}).catch(function(){return caches.match(e.request)}))});';
-        navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'application/javascript'}))).catch(function(){});
-      }
-
-      console.log('📖 Digital Library - The Jos Edition');
-      console.log('✅ Drag to pan with mouse (click-hold-drag)');
-      console.log('✅ Fit to screen on load');
-      console.log('✅ Beautiful zoom controls');
-      console.log('✅ Floating page indicator');
-      console.log('✅ Fullscreen support');
-      
-      fetchBooks(false);
-      state.syncTimer = setInterval(function() { if (!state.currentBook) fetchBooks(true); }, 10000);
-
-    })();
-  </script>
 </body>
 </html>
