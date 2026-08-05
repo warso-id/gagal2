@@ -80,22 +80,133 @@
     .btn-back:hover { background: rgba(255,255,255,0.14); }
     .reader-title { flex: 1; color: var(--text); font-size: 0.74rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     
-    .book-area { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; perspective: 2000px; overflow: hidden; background: #0a0a0a; }
-    .book-spread { width: 100%; height: 100%; display: flex; position: relative; }
+    /* SINGLE PAGE VIEW */
+    .book-area { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; background: #0a0a0a; }
     
-    .page-left { width: 50%; height: 100%; background: var(--page-color); display: flex; flex-direction: column; overflow: hidden; }
-    .pdf-area-left { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px; overflow: hidden; }
+    .pdf-zoom-container {
+      width: 100%;
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      background: #1a1a1a;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      position: relative;
+    }
     
-    .page-right-wrap { width: 50%; height: 100%; position: relative; perspective: 1500px; }
-    .page-flip { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1); z-index: 10; transform-origin: left center; }
-    .page-back { position: absolute; inset: 0; background: #e8dcc8; backface-visibility: hidden; -webkit-backface-visibility: hidden; transform: rotateY(180deg); display: flex; align-items: center; justify-content: center; padding: 8px; }
-    .page-front { position: absolute; inset: 0; background: var(--page-color); backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; overflow: hidden; }
-    .pdf-area-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px; overflow: hidden; }
+    .pdf-zoom-container::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
     
-    canvas { max-width: 100%; max-height: 100%; background: #fff; }
-    .page-label { text-align: center; padding: 3px; font-size: 0.55rem; color: #aaa; flex-shrink: 0; }
-    .spine { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,0.15); transform: translateX(-50%); z-index: 30; pointer-events: none; }
+    .pdf-zoom-container::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.15);
+      border-radius: 4px;
+    }
     
+    .pdf-zoom-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .pdf-viewport {
+      transform-origin: top left;
+      transition: transform 0.2s ease;
+      padding: 16px;
+      min-width: 100%;
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #pdfCanvasSingle {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      background: #fff;
+      display: block;
+    }
+    
+    /* ZOOM CONTROLS */
+    .zoom-controls {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(10px);
+      padding: 6px 10px;
+      border-radius: 20px;
+      z-index: 70;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .zoom-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      padding: 0;
+    }
+    
+    .zoom-btn:hover {
+      background: rgba(255,255,255,0.15);
+      border-color: var(--accent);
+      transform: scale(1.1);
+    }
+    
+    .zoom-btn:active {
+      transform: scale(0.95);
+    }
+    
+    .zoom-level {
+      color: var(--text);
+      font-size: 0.7rem;
+      min-width: 42px;
+      text-align: center;
+      font-weight: 600;
+    }
+    
+    .download-btn {
+      background: rgba(39, 174, 96, 0.2);
+      border-color: rgba(39, 174, 96, 0.4);
+    }
+    
+    .download-btn:hover {
+      background: rgba(39, 174, 96, 0.3);
+      border-color: var(--success);
+    }
+    
+    /* FULLSCREEN */
+    .book-area:fullscreen,
+    .book-area:-webkit-full-screen,
+    .book-area:-moz-full-screen,
+    .book-area:-ms-fullscreen {
+      background: #000;
+    }
+    
+    .book-area:fullscreen .pdf-zoom-container,
+    .book-area:-webkit-full-screen .pdf-zoom-container {
+      background: #000;
+    }
+    
+    .book-area:fullscreen .zoom-controls,
+    .book-area:-webkit-full-screen .zoom-controls {
+      bottom: 16px;
+      right: 16px;
+    }
+    
+    /* LOADING OVERLAY */
     .load-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.94); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 80; }
     .load-overlay.hidden { display: none; }
     .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.08); border-top: 3px solid var(--accent); border-radius: 50%; animation: spinAnim 0.7s linear infinite; }
@@ -124,7 +235,9 @@
       .reader-topbar { padding: 4px 8px; }
       .reader-bottombar { padding: 6px 10px; gap: 10px; }
       .nav-btn { width: 34px; height: 34px; font-size: 0.9rem; }
-      .pdf-area-left, .pdf-area-right { padding: 4px; }
+      .pdf-viewport { padding: 8px; }
+      .zoom-controls { bottom: 6px; right: 6px; padding: 4px 8px; gap: 4px; }
+      .zoom-btn { width: 28px; height: 28px; font-size: 0.75rem; }
     }
     @media (max-width: 480px) {
       .book-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
@@ -154,29 +267,30 @@
           <button class="btn-back" id="btnBack">← Kembali</button>
           <div class="reader-title" id="readerBookTitle">Pilih buku</div>
         </div>
+        
         <div class="book-area">
-          <div class="book-spread">
-            <div class="page-left">
-              <div class="pdf-area-left"><canvas id="pdfCanvasLeft"></canvas></div>
-              <div class="page-label" id="pageLabelLeft"></div>
+          <div class="pdf-zoom-container" id="pdfZoomContainer">
+            <div class="pdf-viewport" id="pdfViewport">
+              <canvas id="pdfCanvasSingle"></canvas>
             </div>
-            <div class="page-right-wrap">
-              <div class="page-flip" id="pageFlip">
-                <div class="page-back"><canvas id="pdfCanvasBack"></canvas></div>
-                <div class="page-front" id="pageFront">
-                  <div class="pdf-area-right"><canvas id="pdfCanvasRight"></canvas></div>
-                  <div class="page-label" id="pageLabelRight"></div>
-                </div>
-              </div>
-            </div>
-            <div class="spine"></div>
           </div>
+          
+          <div class="zoom-controls" id="zoomControls">
+            <button class="zoom-btn" id="btnZoomOut" title="Zoom Out">🔍−</button>
+            <span class="zoom-level" id="zoomLevel">100%</span>
+            <button class="zoom-btn" id="btnZoomIn" title="Zoom In">🔍+</button>
+            <button class="zoom-btn" id="btnZoomReset" title="Reset Zoom">↺</button>
+            <button class="zoom-btn" id="btnFullscreen" title="Fullscreen">⛶</button>
+            <button class="zoom-btn download-btn" id="btnDownload" title="Download PDF">💾</button>
+          </div>
+          
           <div class="load-overlay" id="readerLoading">
             <div class="spinner"></div>
             <div class="load-text" id="readerLoadText">Membuka PDF...</div>
             <button class="retry-btn hidden" id="retryBtn">🔄 Coba Lagi</button>
           </div>
         </div>
+        
         <div class="reader-bottombar">
           <button class="nav-btn" id="btnPrev" disabled>◀</button>
           <span class="page-indicator" id="pageIndicator">0 / 0</span>
@@ -200,9 +314,15 @@
       
       var state = {
         books: [], currentBook: null, pdfDoc: null,
-        totalPages: 10, totalSpreads: 5, currentSpread: 0, isFlipping: false,
+        totalPages: 10, currentPage: 1, isFlipping: false,
         syncTimer: null,
-        pdfCache: {} // Cache untuk PDF: { fileId: { base64, timestamp, pages } }
+        pdfCache: {}, // Cache untuk PDF: { fileId: { base64, timestamp, pages } }
+        // ZOOM STATE
+        zoomLevel: 1.0, // 1.0 = 100%
+        zoomMin: 0.5,
+        zoomMax: 3.0,
+        zoomStep: 0.25,
+        pdfBase64: null // Simpan untuk download
       };
 
       function $(id) { return document.getElementById(id); }
@@ -213,10 +333,17 @@
         DOM.libLoading = $('libLoading'); DOM.bookScroll = $('bookScroll');
         DOM.refreshBtn = $('refreshBtn'); DOM.readerView = $('readerView');
         DOM.readerLoading = $('readerLoading'); DOM.readerLoadText = $('readerLoadText');
-        DOM.retryBtn = $('retryBtn'); DOM.pageFlip = $('pageFlip');
-        DOM.pageFront = $('pageFront'); DOM.pdfCanvasLeft = $('pdfCanvasLeft');
-        DOM.pdfCanvasRight = $('pdfCanvasRight'); DOM.pdfCanvasBack = $('pdfCanvasBack');
-        DOM.pageLabelLeft = $('pageLabelLeft'); DOM.pageLabelRight = $('pageLabelRight');
+        DOM.retryBtn = $('retryBtn');
+        DOM.pdfZoomContainer = $('pdfZoomContainer');
+        DOM.pdfViewport = $('pdfViewport');
+        DOM.pdfCanvasSingle = $('pdfCanvasSingle');
+        DOM.zoomControls = $('zoomControls');
+        DOM.zoomLevel = $('zoomLevel');
+        DOM.btnZoomIn = $('btnZoomIn');
+        DOM.btnZoomOut = $('btnZoomOut');
+        DOM.btnZoomReset = $('btnZoomReset');
+        DOM.btnFullscreen = $('btnFullscreen');
+        DOM.btnDownload = $('btnDownload');
         DOM.pageIndicator = $('pageIndicator'); DOM.readerBookTitle = $('readerBookTitle');
         DOM.btnPrev = $('btnPrev'); DOM.btnNext = $('btnNext');
         DOM.btnBack = $('btnBack'); DOM.toast = $('toast');
@@ -246,11 +373,10 @@
       }
 
       function updateNav() {
-        if (DOM.btnPrev) DOM.btnPrev.disabled = state.currentSpread <= 0 || state.isFlipping;
-        if (DOM.btnNext) DOM.btnNext.disabled = state.currentSpread >= state.totalSpreads - 1 || state.isFlipping;
+        if (DOM.btnPrev) DOM.btnPrev.disabled = state.currentPage <= 1 || state.isFlipping;
+        if (DOM.btnNext) DOM.btnNext.disabled = state.currentPage >= state.totalPages || state.isFlipping;
         if (DOM.pageIndicator) {
-          var lp = state.currentSpread * 2 + 1, rp = Math.min(lp + 1, state.totalPages);
-          DOM.pageIndicator.textContent = lp + '-' + rp + ' / ' + state.totalPages;
+          DOM.pageIndicator.textContent = state.currentPage + ' / ' + state.totalPages;
         }
       }
 
@@ -369,16 +495,18 @@
         console.log('📖 Opening:', title, fileId);
         state.currentBook = { fileId: fileId, title: title, url: url };
         state.pdfDoc = null;
-        state.totalPages = 10; state.totalSpreads = 5;
-        state.currentSpread = 0; state.isFlipping = false;
+        state.totalPages = 10;
+        state.currentPage = 1;
+        state.isFlipping = false;
+        state.pdfBase64 = null;
 
         if (DOM.readerBookTitle) DOM.readerBookTitle.textContent = title;
         if (DOM.readerView) DOM.readerView.classList.add('active');
-        if (DOM.pageFlip) { DOM.pageFlip.style.transition = 'none'; DOM.pageFlip.style.transform = 'rotateY(0deg)'; }
-        clearCanvas(DOM.pdfCanvasLeft); clearCanvas(DOM.pdfCanvasRight); clearCanvas(DOM.pdfCanvasBack);
-        if (DOM.pageLabelLeft) DOM.pageLabelLeft.textContent = '';
-        if (DOM.pageLabelRight) DOM.pageLabelRight.textContent = '';
+        clearCanvas(DOM.pdfCanvasSingle);
         updateNav();
+        
+        // Reset zoom
+        updateZoom(1.0, false);
 
         // CHECK CACHE FIRST
         var cached = getCachedPDF(fileId);
@@ -389,8 +517,8 @@
           if (cached.pdfDoc) {
             state.pdfDoc = cached.pdfDoc;
             state.totalPages = cached.pages || state.pdfDoc.numPages || 10;
-            state.totalSpreads = Math.ceil(state.totalPages / 2);
-            await renderPDFSpread(0);
+            state.pdfBase64 = cached.base64;
+            await renderSinglePage(1);
             showReaderLoading(false);
             updateNav();
             toast('⚡ Loaded from cache!', 'success', 2000);
@@ -421,6 +549,8 @@
 
           if (!fullBase64) throw new Error('Gagal download PDF');
           console.log('✅ Downloaded:', fullBase64.length);
+          
+          state.pdfBase64 = fullBase64;
 
           // Render PDF
           showReaderLoading(true, 'Rendering PDF...');
@@ -429,7 +559,6 @@
           var bytes = new Uint8Array(binaryStr.length);
           for (var j = 0; j < binaryStr.length; j++) bytes[j] = binaryStr.charCodeAt(j);
 
-          // Gunakan PDF.js yang sudah ada di memori (tidak perlu download ulang)
           if (typeof pdfjsLib === 'undefined') {
             await loadPDFJS();
           }
@@ -438,19 +567,17 @@
             var loadingTask = pdfjsLib.getDocument({ data: bytes, disableAutoFetch: true, disableStream: true });
             state.pdfDoc = await loadingTask.promise;
             state.totalPages = state.pdfDoc.numPages;
-            state.totalSpreads = Math.ceil(state.totalPages / 2);
             
             // CACHE PDF
             setCachedPDF(fileId, fullBase64, state.pdfDoc);
             state.pdfCache[fileId].pages = state.totalPages;
             
-            await renderPDFSpread(0);
+            await renderSinglePage(1);
             showReaderLoading(false);
             updateNav();
             toast('✅ ' + state.totalPages + ' halaman', 'success', 2000);
           } else {
-            // Fallback tanpa PDF.js
-            renderFallbackSpread(0);
+            renderFallbackPage(1);
             showReaderLoading(false);
             updateNav();
             toast('⚠️ Preview mode', 'error', 3000);
@@ -461,7 +588,7 @@
           showReaderLoading(false);
           if (DOM.retryBtn) DOM.retryBtn.classList.remove('hidden');
           toast('❌ ' + e.message, 'error', 5000);
-          renderFallbackSpread(0);
+          renderFallbackPage(1);
           updateNav();
         }
       }
@@ -470,14 +597,12 @@
       function loadPDFJS() {
         return new Promise(function(resolve) {
           if (typeof pdfjsLib !== 'undefined') {
-            // Already loaded
             try {
               pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
             } catch(e) {}
             resolve(); return;
           }
           
-          // Coba load dari memory dulu (jika sudah di-cache browser)
           var script = document.createElement('script');
           script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
           script.async = true;
@@ -497,46 +622,70 @@
       }
 
       // ============ RENDER FUNCTIONS ============
-      async function renderPDFSpread(idx) {
-        var lp = idx * 2 + 1, rp = lp + 1;
-        if (lp <= state.totalPages) { await renderPDFPage(lp, DOM.pdfCanvasLeft); if (DOM.pageLabelLeft) DOM.pageLabelLeft.textContent = 'Hal ' + lp; }
-        else { clearCanvas(DOM.pdfCanvasLeft); if (DOM.pageLabelLeft) DOM.pageLabelLeft.textContent = ''; }
-        if (rp <= state.totalPages) { await renderPDFPage(rp, DOM.pdfCanvasRight); if (DOM.pageLabelRight) DOM.pageLabelRight.textContent = 'Hal ' + rp; }
-        else { clearCanvas(DOM.pdfCanvasRight); if (DOM.pageLabelRight) DOM.pageLabelRight.textContent = ''; }
+      async function renderSinglePage(pageNum) {
+        if (!state.currentBook || !pageNum) return;
+        
+        if (state.pdfDoc && pageNum <= state.totalPages) {
+          await renderPDFPage(pageNum, DOM.pdfCanvasSingle);
+        } else if (pageNum <= state.totalPages) {
+          renderFallbackPage(pageNum);
+        } else {
+          clearCanvas(DOM.pdfCanvasSingle);
+        }
+        
         updateNav();
+        
+        // Auto-fit setelah render
+        setTimeout(function() {
+          if (state.zoomLevel === 1.0) {
+            zoomFitToWidth();
+          }
+        }, 100);
       }
 
       async function renderPDFPage(num, canvas) {
         if (!state.pdfDoc || !canvas || num > state.totalPages) return;
+        
         try {
           var page = await state.pdfDoc.getPage(num);
-          var pw = canvas.parentElement.clientWidth - 12 || 300;
-          var ph = canvas.parentElement.clientHeight - 12 || 400;
-          var vp = page.getViewport({ scale: 1 });
-          var scale = Math.min(pw/vp.width, ph/vp.height, 2.5);
-          var svp = page.getViewport({ scale: scale });
-          canvas.height = svp.height; canvas.width = svp.width;
+          
+          // Hitung ukuran berdasarkan zoom
+          var baseScale = 1.5;
+          var zoomScale = state.zoomLevel || 1.0;
+          var scale = baseScale * zoomScale;
+          
+          var vp = page.getViewport({ scale: scale });
+          
+          canvas.height = vp.height;
+          canvas.width = vp.width;
+          canvas.style.width = vp.width + 'px';
+          canvas.style.height = vp.height + 'px';
+          
           var ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-          await page.render({ canvasContext: ctx, viewport: svp, background: '#fff' }).promise;
-        } catch (e) { renderFallbackPage(num, canvas); }
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          await page.render({
+            canvasContext: ctx,
+            viewport: vp,
+            background: '#fff'
+          }).promise;
+          
+        } catch (e) {
+          console.error('Render error:', e);
+          renderFallbackPage(num);
+        }
       }
 
-      function renderFallbackSpread(idx) {
-        var lp = idx * 2 + 1, rp = lp + 1;
-        if (lp <= state.totalPages) { renderFallbackPage(lp, DOM.pdfCanvasLeft); if (DOM.pageLabelLeft) DOM.pageLabelLeft.textContent = 'Hal ' + lp; }
-        else { clearCanvas(DOM.pdfCanvasLeft); if (DOM.pageLabelLeft) DOM.pageLabelLeft.textContent = ''; }
-        if (rp <= state.totalPages) { renderFallbackPage(rp, DOM.pdfCanvasRight); if (DOM.pageLabelRight) DOM.pageLabelRight.textContent = 'Hal ' + rp; }
-        else { clearCanvas(DOM.pdfCanvasRight); if (DOM.pageLabelRight) DOM.pageLabelRight.textContent = ''; }
-        updateNav();
-      }
-
-      function renderFallbackPage(num, canvas) {
-        if (!canvas) return;
+      function renderFallbackPage(num) {
+        if (!DOM.pdfCanvasSingle) return;
+        var canvas = DOM.pdfCanvasSingle;
         var ctx = canvas.getContext('2d');
-        var w = canvas.parentElement.clientWidth - 10 || 300;
-        var h = canvas.parentElement.clientHeight - 10 || 400;
+        var w = canvas.parentElement.clientWidth - 10 || 600;
+        var h = canvas.parentElement.clientHeight - 10 || 800;
         canvas.width = w; canvas.height = h;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
         ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
         ctx.fillStyle = '#333'; ctx.textAlign = 'center';
         ctx.font = 'bold 16px Georgia'; ctx.fillText('Halaman ' + num, w/2, h/3);
@@ -545,90 +694,328 @@
         ctx.font = 'italic 9px Georgia'; ctx.fillText('— ' + num + ' —', w/2, h-18);
       }
 
-      // ============ FLIP ============
+      // ============ ZOOM FUNCTIONS ============
+      function updateZoom(newZoom, animate) {
+        if (animate === undefined) animate = true;
+        
+        state.zoomLevel = Math.max(state.zoomMin, Math.min(state.zoomMax, newZoom));
+        
+        if (DOM.pdfViewport) {
+          DOM.pdfViewport.style.transform = 'scale(' + state.zoomLevel + ')';
+        }
+        
+        if (DOM.zoomLevel) {
+          DOM.zoomLevel.textContent = Math.round(state.zoomLevel * 100) + '%';
+        }
+        
+        if (state.currentBook && state.pdfDoc) {
+          renderSinglePage(state.currentPage);
+        }
+        
+        try {
+          localStorage.setItem('pdf-zoom-level', state.zoomLevel);
+        } catch(e) {}
+      }
+
+      function zoomIn() {
+        updateZoom(state.zoomLevel + state.zoomStep);
+        toast('🔍 ' + Math.round(state.zoomLevel * 100) + '%', 'info', 1500);
+      }
+
+      function zoomOut() {
+        updateZoom(state.zoomLevel - state.zoomStep);
+        toast('🔍 ' + Math.round(state.zoomLevel * 100) + '%', 'info', 1500);
+      }
+
+      function zoomReset() {
+        updateZoom(1.0);
+        toast('↺ Zoom Reset', 'success', 1500);
+      }
+
+      function zoomFitToWidth() {
+        if (!DOM.pdfZoomContainer || !DOM.pdfCanvasSingle) return;
+        
+        var containerWidth = DOM.pdfZoomContainer.clientWidth - 32;
+        var canvasWidth = DOM.pdfCanvasSingle.width || 600;
+        
+        if (canvasWidth > 0) {
+          var fitZoom = containerWidth / canvasWidth;
+          updateZoom(Math.min(fitZoom, state.zoomMax));
+        }
+      }
+
+      // ============ FULLSCREEN ============
+      function toggleFullscreen() {
+        var elem = document.querySelector('.book-area');
+        
+        if (!document.fullscreenElement && 
+            !document.webkitFullscreenElement && 
+            !document.mozFullScreenElement && 
+            !document.msFullscreenElement) {
+          if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+          } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+          } else if (elem.mozRequestFullScreen) {
+            elem.mozRequestFullScreen();
+          } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
+          }
+          toast('📺 Fullscreen', 'success', 1500);
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+          }
+        }
+      }
+
+      function updateFullscreenButton() {
+        var isFullscreen = !!(document.fullscreenElement || 
+                               document.webkitFullscreenElement || 
+                               document.mozFullScreenElement || 
+                               document.msFullscreenElement);
+        
+        if (DOM.btnFullscreen) {
+          DOM.btnFullscreen.innerHTML = isFullscreen ? '⛶' : '⛶';
+          DOM.btnFullscreen.title = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
+        }
+      }
+
+      // ============ DOWNLOAD PDF ============
+      function downloadPDF() {
+        if (!state.currentBook) {
+          toast('❌ Tidak ada buku yang dibuka', 'error');
+          return;
+        }
+        
+        var fileId = state.currentBook.fileId;
+        
+        // Cek apakah ada base64 di state
+        if (state.pdfBase64) {
+          triggerDownload(state.pdfBase64, state.currentBook.title);
+          toast('💾 Download PDF', 'success', 2000);
+          return;
+        }
+        
+        // Cek cache
+        var cached = getCachedPDF(fileId);
+        if (cached && cached.base64) {
+          triggerDownload(cached.base64, state.currentBook.title);
+          toast('💾 Download dari cache', 'success', 2000);
+          return;
+        }
+        
+        // Download ulang
+        toast('📥 Mendownload PDF...', 'info', 3000);
+        
+        fetch(WEBAPP_URL + '?action=getFullPDF&fileId=' + fileId)
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data.success && data.base64) {
+              triggerDownload(data.base64, state.currentBook.title);
+              toast('✅ Download selesai!', 'success', 2000);
+            } else {
+              throw new Error('Gagal download');
+            }
+          })
+          .catch(function(err) {
+            toast('❌ Gagal download PDF', 'error', 3000);
+          });
+      }
+
+      function triggerDownload(base64, filename) {
+        var byteChars = atob(base64);
+        var byteNums = new Array(byteChars.length);
+        for (var i = 0; i < byteChars.length; i++) {
+          byteNums[i] = byteChars.charCodeAt(i);
+        }
+        var byteArr = new Uint8Array(byteNums);
+        var blob = new Blob([byteArr], { type: 'application/pdf' });
+        
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = (filename || 'document') + '.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('💾 Downloaded:', filename);
+      }
+
+      // ============ NAVIGATION ============
       async function flipNext() {
-        if (state.isFlipping || state.currentSpread >= state.totalSpreads - 1) return;
-        state.isFlipping = true; updateNav();
-        var nl = (state.currentSpread + 1) * 2 + 1;
-        if (state.pdfDoc && nl <= state.totalPages) await renderPDFPage(nl, DOM.pdfCanvasBack);
-        else if (nl <= state.totalPages) renderFallbackPage(nl, DOM.pdfCanvasBack);
-        if (DOM.pageFlip) { DOM.pageFlip.style.transition = 'transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1)'; DOM.pageFlip.style.transform = 'rotateY(-180deg)'; }
-        await sleep(550);
-        state.currentSpread++;
-        if (DOM.pageFlip) { DOM.pageFlip.style.transition = 'none'; DOM.pageFlip.style.transform = 'rotateY(0deg)'; }
-        if (state.pdfDoc) await renderPDFSpread(state.currentSpread);
-        else renderFallbackSpread(state.currentSpread);
-        await sleep(30);
-        if (DOM.pageFlip) DOM.pageFlip.style.transition = 'transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1)';
-        state.isFlipping = false; updateNav();
+        if (state.isFlipping || state.currentPage >= state.totalPages) return;
+        state.isFlipping = true;
+        state.currentPage++;
+        await renderSinglePage(state.currentPage);
+        
+        setTimeout(function() {
+          if (state.zoomLevel === 1.0) zoomFitToWidth();
+        }, 150);
+        
+        state.isFlipping = false;
+        updateNav();
       }
 
       async function flipPrev() {
-        if (state.isFlipping || state.currentSpread <= 0) return;
-        state.isFlipping = true; updateNav();
-        var pr = state.currentSpread * 2;
-        if (state.pdfDoc && pr <= state.totalPages) await renderPDFPage(pr, DOM.pdfCanvasBack);
-        else if (pr <= state.totalPages) renderFallbackPage(pr, DOM.pdfCanvasBack);
-        if (DOM.pageFlip) { DOM.pageFlip.style.transition = 'none'; DOM.pageFlip.style.transform = 'rotateY(-180deg)'; }
-        state.currentSpread--;
-        if (state.pdfDoc) await renderPDFSpread(state.currentSpread);
-        else renderFallbackSpread(state.currentSpread);
-        await sleep(30);
-        if (DOM.pageFlip) { DOM.pageFlip.style.transition = 'transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1)'; DOM.pageFlip.style.transform = 'rotateY(0deg)'; }
-        await sleep(550);
-        state.isFlipping = false; updateNav();
+        if (state.isFlipping || state.currentPage <= 1) return;
+        state.isFlipping = true;
+        state.currentPage--;
+        await renderSinglePage(state.currentPage);
+        
+        setTimeout(function() {
+          if (state.zoomLevel === 1.0) zoomFitToWidth();
+        }, 150);
+        
+        state.isFlipping = false;
+        updateNav();
       }
 
       function goBack() {
         if (DOM.readerView) DOM.readerView.classList.remove('active');
         state.pdfDoc = null; state.currentBook = null;
-        if (DOM.pageFlip) { DOM.pageFlip.style.transition = 'none'; DOM.pageFlip.style.transform = 'rotateY(0deg)'; }
+        state.pdfBase64 = null;
+      }
+
+      function loadZoomPreference() {
+        try {
+          var saved = localStorage.getItem('pdf-zoom-level');
+          if (saved) {
+            state.zoomLevel = parseFloat(saved) || 1.0;
+          }
+        } catch(e) {}
       }
 
       // ============ EVENTS ============
       function safeOn(el, ev, fn) { if (el) el.addEventListener(ev, fn); }
 
       initDOM();
+      loadZoomPreference();
       
       safeOn(DOM.btnPrev, 'click', flipPrev);
       safeOn(DOM.btnNext, 'click', flipNext);
       safeOn(DOM.btnBack, 'click', goBack);
+      safeOn(DOM.btnZoomIn, 'click', zoomIn);
+      safeOn(DOM.btnZoomOut, 'click', zoomOut);
+      safeOn(DOM.btnZoomReset, 'click', zoomReset);
+      safeOn(DOM.btnFullscreen, 'click', toggleFullscreen);
+      safeOn(DOM.btnDownload, 'click', downloadPDF);
+      
       safeOn(DOM.retryBtn, 'click', function() {
         if (state.currentBook) openBook(state.currentBook.fileId, state.currentBook.title, state.currentBook.url);
       });
+      
       safeOn(DOM.refreshBtn, 'click', function() { fetchBooks(false); });
 
       document.addEventListener('keydown', function(e) {
         if (!state.currentBook || state.isFlipping) return;
-        if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); flipNext(); }
-        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); flipPrev(); }
-        else if (e.key === 'Escape') goBack();
+        
+        if (e.key === 'ArrowRight' || e.key === 'PageDown') { 
+          e.preventDefault(); flipNext(); 
+        }
+        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { 
+          e.preventDefault(); flipPrev(); 
+        }
+        else if (e.key === 'Escape') { 
+          goBack(); 
+        }
+        else if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
+          e.preventDefault(); zoomIn();
+        }
+        else if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+          e.preventDefault(); zoomOut();
+        }
+        else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+          e.preventDefault(); zoomReset();
+        }
+        else if (e.key === 'f' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault(); toggleFullscreen();
+        }
       });
 
-      if (DOM.pageFront) {
-        var tx = 0;
-        DOM.pageFront.addEventListener('touchstart', function(e) {
-          if (state.currentBook && !state.isFlipping) tx = e.touches[0].clientX;
-        }, { passive: true });
-        DOM.pageFront.addEventListener('touchend', function(e) {
-          if (!state.currentBook || state.isFlipping || !tx) return;
-          var dx = tx - e.changedTouches[0].clientX;
-          if (Math.abs(dx) > 40) dx > 0 ? flipNext() : flipPrev();
-          tx = 0;
+      // Zoom dengan scroll mouse
+      if (DOM.pdfZoomContainer) {
+        DOM.pdfZoomContainer.addEventListener('wheel', function(e) {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+              zoomIn();
+            } else {
+              zoomOut();
+            }
+          }
+        }, { passive: false });
+      }
+
+      // Pinch zoom untuk mobile
+      if (DOM.pdfZoomContainer) {
+        var initialDistance = 0;
+        var initialZoom = 1;
+        
+        DOM.pdfZoomContainer.addEventListener('touchstart', function(e) {
+          if (e.touches.length === 2) {
+            initialDistance = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+            );
+            initialZoom = state.zoomLevel;
+          }
         });
-        DOM.pageFront.addEventListener('click', function(e) {
+        
+        DOM.pdfZoomContainer.addEventListener('touchmove', function(e) {
+          if (e.touches.length === 2) {
+            e.preventDefault();
+            var currentDistance = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+            );
+            var scale = currentDistance / initialDistance;
+            var newZoom = initialZoom * scale;
+            updateZoom(newZoom, false);
+          }
+        }, { passive: false });
+      }
+
+      // Double tap untuk zoom
+      if (DOM.pdfZoomContainer) {
+        DOM.pdfZoomContainer.addEventListener('dblclick', function(e) {
+          if (state.zoomLevel !== 1.0) {
+            zoomReset();
+          } else {
+            updateZoom(2.0);
+          }
+        });
+      }
+
+      // Klik di area PDF untuk navigasi
+      if (DOM.pdfZoomContainer) {
+        DOM.pdfZoomContainer.addEventListener('click', function(e) {
           if (!state.currentBook || state.isFlipping) return;
-          var rect = DOM.pageFront.getBoundingClientRect();
+          var rect = DOM.pdfZoomContainer.getBoundingClientRect();
           var x = e.clientX - rect.left;
           if (x < rect.width * 0.25) flipPrev();
           else if (x > rect.width * 0.75) flipNext();
         });
       }
 
+      // Fullscreen change listener
+      document.addEventListener('fullscreenchange', updateFullscreenButton);
+      document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+      document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+      document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+
       window.addEventListener('resize', function() {
         clearTimeout(state._rt);
         state._rt = setTimeout(function() {
-          if (state.currentBook && state.pdfDoc) renderPDFSpread(state.currentSpread);
+          if (state.currentBook && state.pdfDoc) renderSinglePage(state.currentPage);
         }, 300);
       });
 
@@ -641,9 +1028,12 @@
         navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'application/javascript'}))).catch(function(){});
       }
 
-      console.log('📖 Digital Library - B2:B + Cache');
+      console.log('📖 Digital Library - Single Page + Zoom + Download');
       console.log('✅ Cache enabled (max ' + PDF_CACHE_MAX + ' PDFs, TTL ' + (PDF_CACHE_TTL/60000) + 'min)');
       console.log('✅ PDF.js silent loading');
+      console.log('✅ Zoom controls (pinch, scroll, buttons)');
+      console.log('✅ Download PDF support');
+      console.log('✅ Fullscreen mode');
       
       fetchBooks(false);
       state.syncTimer = setInterval(function() { if (!state.currentBook) fetchBooks(true); }, 10000);
